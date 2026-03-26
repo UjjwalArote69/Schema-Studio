@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/lib/prisma.ts
 import { PrismaClient } from "../../prisma/generated/prisma/client";
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
@@ -8,16 +7,20 @@ import ws from 'ws';
 neonConfig.webSocketConstructor = ws;
 
 const prismaClientSingleton = () => {
-  const connectionString = process.env.DATABASE_URL_UNPOOLED;
-  
-  // Add this check
+  const connectionString =
+    process.env.DATABASE_URL_UNPOOLED ||
+    process.env.DATABASE_URL;
+
   if (!connectionString) {
-    throw new Error("DATABASE_URL_UNPOOLED is not defined in the environment variables.");
+    throw new Error(
+      "No database connection string found. " +
+      "Set DATABASE_URL_UNPOOLED (or DATABASE_URL) in your .env.local file."
+    );
   }
-  
+
   const pool = new Pool({ connectionString });
-  const adapter = new PrismaNeon(pool as any); 
-  
+  const adapter = new PrismaNeon(pool as any);
+
   return new PrismaClient({ adapter } as any);
 };
 
@@ -27,8 +30,7 @@ declare global {
 
 export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prismaGlobal = prisma;
-}
+// Keep a single instance in all environments to avoid exhausting the pool
+globalThis.prismaGlobal = prisma;
 
 export default prisma;
