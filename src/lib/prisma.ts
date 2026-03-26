@@ -1,34 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/prisma.ts
-import { PrismaClient } from "../../prisma/generated/prisma/client";
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { PrismaNeon } from '@prisma/adapter-neon';
-import ws from 'ws';
+import { PrismaClient as GeneratedClient } from "../../prisma/generated/prisma/client";
+import { PrismaClient } from "@prisma/client"; // Use this for typing
+import { PrismaPg } from '@prisma/adapter-pg';
+import  pg  from 'pg'; // Ensure you have pg installed
 
-// Required for Node.js environments (like Vercel serverless functions)
-neonConfig.webSocketConstructor = ws;
-
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL;
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool as any);
 
 const prismaClientSingleton = () => {
-  const pool = new Pool({ connectionString });
-  
-  // FIX: Cast pool as any to bypass the conflicting Postgres type definitions
-  const adapter = new PrismaNeon(pool as any); 
-  
-  // Pass the adapter to your custom-generated client
-  return new PrismaClient({ adapter } as any);
-};
-
-declare global {
-  // eslint-disable-next-line no-var
-  var prismaGlobal: ReturnType<typeof prismaClientSingleton> | undefined;
+  return new GeneratedClient({
+    adapter
+  }) as unknown as PrismaClient; // Cast to the standard type
 }
+declare const globalThis: {
+  prismaGlobal: ReturnType<typeof prismaClientSingleton>
+} & typeof global;
 
 export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prismaGlobal = prisma;
-}
 
-export default prisma;
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.prismaGlobal = prisma
+}

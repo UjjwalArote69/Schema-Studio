@@ -14,6 +14,7 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
+  console.log("MY DB URL IS:", process.env.DATABASE_URL);
   const session = await getServerSession(authOptions);
   const userId = (session?.user as {id: string})?.id;
   if (!session || !userId) {redirect("/login");}
