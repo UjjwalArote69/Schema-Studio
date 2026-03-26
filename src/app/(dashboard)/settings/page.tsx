@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import prisma  from "@/lib/prisma";
+import {prisma}  from "@/lib/prisma";
 import { User, Mail, Shield, Save, AlertTriangle, CreditCard } from "lucide-react";
 import { updateProfile, deleteAccount } from "@/app/actions/user-actions";
 
