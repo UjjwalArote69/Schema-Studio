@@ -1,31 +1,29 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import NextAuth, { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials"; // <-- New import
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import {prisma} from "@/lib/prisma";
-import bcrypt from "bcryptjs"; // <-- New import
+import { PrismaAdapter } from "@auth/prisma-adapter"; // <-- 1. Import this
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  // 1. MUST set strategy to "jwt" when using Credentials with Prisma
-  session: {
-    strategy: "jwt", 
-  },
+  // 2. Add the adapter here! This is required for OAuth (Google/Github) to save users.
+  adapter: PrismaAdapter(prisma) as any, 
+  
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID as string,
       clientSecret: process.env.GITHUB_SECRET as string,
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_ID as string,
-      clientSecret: process.env.GOOGLE_SECRET as string,
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }),
-    // 2. Add the Credentials Provider
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
@@ -33,17 +31,14 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        // Find user in MySQL
         const user = await prisma.user.findUnique({
           where: { email: credentials.email }
         });
 
-        // If no user, or if they signed up with Google/GitHub and have no password
-        if (!user || !user?.password) {
+        if (!user || !user.password) {
           throw new Error("Invalid credentials");
         }
 
-        // Check if password matches the hash
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
           user.password
@@ -53,26 +48,32 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        // Return the user object if successful
         return user;
       }
     })
   ],
+  pages: {
+    signIn: "/login",
+  },
+  debug: process.env.NODE_ENV === "development",
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    // 3. Update callbacks to handle JWT mapping
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id; // Map DB ID to the token
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string; // Map token ID to the frontend session
+      if (session.user && token.id) {
+        (session.user as any).id = token.id;
       }
       return session;
-    },
-  },
+    }
+  }
 };
 
 const handler = NextAuth(authOptions);

@@ -14,9 +14,8 @@ export default async function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
-
   const userId = (session?.user as {id: string})?.id;
+  if (!session || !userId) {redirect("/login");}
 
   const [User, recentProjects] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
