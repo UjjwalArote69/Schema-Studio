@@ -222,7 +222,6 @@ export default function DocsPage() {
                 </p>
               </div>
 
-              {/* Export */}
               <div className="p-6 border border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg">

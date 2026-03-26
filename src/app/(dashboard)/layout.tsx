@@ -7,7 +7,7 @@ import { Database, Sparkles, BookOpen, Clock, ChevronRight } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/logout-button";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import { prisma } from "@/lib/prisma";
+import prisma  from "@/lib/prisma";
 
 export default async function ProtectedLayout({
   children,
