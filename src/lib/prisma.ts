@@ -8,35 +8,38 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const createPrismaClient = () => {
-  const dbUrl = process.env.DATABASE_URL;
+  let dbUrl = process.env.DATABASE_URL;
 
-  // Fallback for build steps
+  // 1. If Vercel is completely missing the variable
   if (!dbUrl) {
+    console.error("🚨 CRITICAL: DATABASE_URL is undefined! Vercel cannot see your environment variable.");
     return new PrismaClient() as any;
   }
 
+  // 2. Automatically clean accidental quotes or spaces pasted into Vercel
+  dbUrl = dbUrl.replace(/^["']|["']$/g, '').trim();
+
   try {
-    // 1. Create a native MariaDB/MySQL connection pool using the raw URL
+    // 3. Parse the cleaned URL
+    const url = new URL(dbUrl);
+    
     const pool = createPool({
-      host: new URL(dbUrl).hostname,
-      port: Number(new URL(dbUrl).port),
-      user: new URL(dbUrl).username,
-      password: new URL(dbUrl).password,
-      database: new URL(dbUrl).pathname.slice(1),
+      host: url.hostname,
+      port: Number(url.port) || 12345, // Aiven ports are usually 5 digits
+      user: url.username,
+      password: url.password,
+      database: url.pathname.slice(1),
       connectionLimit: 5,
-      // Force SSL but bypass strict CA checks for serverless environments
       ssl: { rejectUnauthorized: false } 
     });
 
-    // 2. Attach the pool to the Prisma Adapter
-    // ADD 'as any' HERE TO BYPASS THE TYPESCRIPT BUILD ERROR
     const adapter = new PrismaMariaDb(pool as any);
-
-    // 3. Return the fully configured client
     return new PrismaClient({ adapter });
+
   } catch (error) {
-    console.error("Failed to initialize Prisma Adapter", error);
-    return new PrismaClient() as any;
+    // 4. If it fails here, the URL is fundamentally broken, don't fall back to localhost!
+    console.error("🚨 URL PARSE ERROR: The DATABASE_URL in Vercel is formatted incorrectly.", error);
+    throw new Error("Invalid DATABASE_URL format. Check Vercel settings.");
   }
 };
 
