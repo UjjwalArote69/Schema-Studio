@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // src/app/api/auth/register/route.ts  (top of file, temporary)
+console.log("DB URL CHECK:", process.env.DATABASE_URL_UNPOOLED, process.env.DATABASE_URL);
     const { email, password, name } = await req.json();
 
     if (!email || !password) {
