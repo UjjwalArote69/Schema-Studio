@@ -146,7 +146,7 @@ function generateSQLite(tables: Table[], relations: Relation[]): string {
 
 // 4. Prisma Schema (Upgraded with m:n arrays)
 function generatePrisma(tables: Table[], relations: Relation[]): string {
-  let code = `generator client {\n  provider = "prisma-client-js"\n}\n\ndatasource db {\n  provider = "postgresql"\n  url      = env("DATABASE_URL")\n}\n\n`;
+  let code = `generator client {\n  provider = "prisma-client-js"\n}\n\ndatasource db {\n  provider = "postgresql"\n  url      = env("DATABASE_URL_UNPOOLED")\n}\n\n`;
 
   const mapType = (type: string) => {
     const map: Record<string, string> = { "UUID": "String", "VARCHAR": "String", "INT": "Int", "FLOAT": "Float", "BOOLEAN": "Boolean", "DATE": "DateTime" };

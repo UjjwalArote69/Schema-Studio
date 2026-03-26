@@ -70,7 +70,7 @@ export interface PrismaClientConstructor {
    * @example
    * ```
    * const prisma = new PrismaClient({
-   *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+   *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL_UNPOOLED })
    * })
    * // Fetch zero or more Projects
    * const projects = await prisma.project.findMany()
@@ -94,7 +94,7 @@ export interface PrismaClientConstructor {
  * @example
  * ```
  * const prisma = new PrismaClient({
- *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+ *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL_UNPOOLED })
  * })
  * // Fetch zero or more Projects
  * const projects = await prisma.project.findMany()

@@ -12,7 +12,7 @@ neonConfig.webSocketConstructor = ws;
 
 const prismaClientSingleton = () => {
   // Read the env variable lazily to avoid the "localhost" error
-  const connectionString = process.env.DATABASE_URL!;
+  const connectionString = process.env.DATABASE_URL_UNPOOLED!;
   
   const pool = new Pool({ connectionString });
   const adapter = new PrismaNeon(pool as any); 
