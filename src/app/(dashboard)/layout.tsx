@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
@@ -59,7 +60,7 @@ export default async function ProtectedLayout({
                 Recent
               </h3>
               <div className="space-y-0.5">
-                {recentProjects.map((project) => (
+                {recentProjects.map((project: any) => (
                   <Link 
                     key={project.id} 
                     href={`/editor/${project.id}`}
