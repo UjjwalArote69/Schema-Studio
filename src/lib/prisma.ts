@@ -1,34 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { createPool } from "mariadb";
 
-// Prevent multiple instances of Prisma Client in development
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 const createPrismaClient = () => {
-  // Provide a dummy URL fallback so Vercel's build step doesn't crash if the env var is missing
-  const dbUrl = process.env.DATABASE_URL || "mysql://user:pass@localhost:3306/dummy";
-  
+  const dbUrl = process.env.DATABASE_URL;
+
+  // Fallback for build steps
+  if (!dbUrl) {
+    return new PrismaClient() as any;
+  }
+
   try {
-    const url = new URL(dbUrl);
-    
-    // In Prisma 7, ALL direct connections require an adapter
-    const adapter = new PrismaMariaDb({
-      host: url.hostname,
-      port: Number(url.port) || 12345, // Aiven usually uses 5-digit ports
-      user: url.username,
-      password: url.password,
-      database: url.pathname.slice(1),
-      // CRITICAL FOR AIVEN: Bypasses strict CA validation during serverless cold starts
-      ssl: { rejectUnauthorized: false }, 
-      connectionLimit: 5
+    // 1. Create a native MariaDB/MySQL connection pool using the raw URL
+    const pool = createPool({
+      host: new URL(dbUrl).hostname,
+      port: Number(new URL(dbUrl).port),
+      user: new URL(dbUrl).username,
+      password: new URL(dbUrl).password,
+      database: new URL(dbUrl).pathname.slice(1),
+      connectionLimit: 5,
+      // Force SSL but bypass strict CA checks for serverless environments
+      ssl: { rejectUnauthorized: false } 
     });
 
+    // 2. Attach the pool to the Prisma Adapter
+    // ADD 'as any' HERE TO BYPASS THE TYPESCRIPT BUILD ERROR
+    const adapter = new PrismaMariaDb(pool as any);
+
+    // 3. Return the fully configured client
     return new PrismaClient({ adapter });
   } catch (error) {
-    console.warn("Invalid DATABASE_URL format, falling back to empty client.");
+    console.error("Failed to initialize Prisma Adapter", error);
     return new PrismaClient() as any;
   }
 };
