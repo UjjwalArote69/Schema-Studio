@@ -28,6 +28,8 @@ model Project {
 
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  snapshots ProjectSnapshot[]
 }
 
 // ==========================================
@@ -79,4 +81,19 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ==========================================
+// 3. SCHEMA VERSIONING
+// ==========================================
+
+model ProjectSnapshot {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String   // "Auto-save", "Before AI generation", "Manual snapshot", etc.
+  data      Json     // Full { tables, relations } blob at that point in time
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
 }

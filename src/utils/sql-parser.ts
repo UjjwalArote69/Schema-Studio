@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Table, Relation, Column } from "@/store/useSchemaStore";
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -6,6 +5,7 @@ const generateId = () => Math.random().toString(36).substring(2, 9);
 export function parseSQL(sql: string): { tables: Table[]; relations: Relation[] } {
   const tables: Table[] = [];
   const relations: Relation[] = [];
+  const pendingRelations: { sourceTableId: string; sourceColName: string; targetTableName: string; targetColName: string }[] = [];
 
   // 1. Clean the SQL (remove comments and extra whitespace)
   const cleanSql = sql.replace(/--.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "").trim();
@@ -108,5 +108,3 @@ export function parseSQL(sql: string): { tables: Table[]; relations: Relation[] 
 
   return { tables, relations };
 }
-
-const pendingRelations: any[] = [];

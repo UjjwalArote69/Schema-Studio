@@ -117,10 +117,10 @@ export default function LandingPage() {
             </div>
 
             {/* Split Pane Interface */}
-            <div className="grid md:grid-cols-2 h-[450px]">
+            <div className="grid md:grid-cols-2 h-112.5">
               
               {/* Left: Interactive Canvas Mock */}
-              <div className="relative p-8 border-r border-zinc-200 dark:border-zinc-800 flex bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:16px_16px] overflow-hidden">
+              <div className="relative p-8 border-r border-zinc-200 dark:border-zinc-800 flex bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] bg-size-[16px_16px] overflow-hidden">
                 
                 {/* SVG Connecting Line */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>

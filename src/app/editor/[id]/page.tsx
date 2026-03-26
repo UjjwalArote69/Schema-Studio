@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import {prisma} from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import EditorClient from "./editor-client";
@@ -11,7 +11,7 @@ export default async function AuthenticatedEditorPage({ params }: { params: Prom
   const projectId = resolvedParams.id;
 
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id: string })?.id;
+  const userId = session?.user?.id;
 
   if (!userId) redirect("/login");
 

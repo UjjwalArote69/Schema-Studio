@@ -1,12 +1,14 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import {prisma}  from "@/lib/prisma";
-import { User, Mail, Shield, Save, AlertTriangle, CreditCard } from "lucide-react";
-import { updateProfile, deleteAccount } from "@/app/actions/user-actions";
+import { User, Mail, Shield, Save, CreditCard } from "lucide-react";
+import { updateProfile } from "@/app/actions/user-actions";
+import { DeleteAccountForm } from "@/components/settings/delete-account-form";
+import { ProfileForm } from "@/components/settings/profile-form";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id: string })?.id;
+  const userId = session?.user?.id;
 
   const dbUser = await prisma.user.findUnique({
     where: { id: userId }
@@ -42,84 +44,12 @@ export default async function SettingsPage() {
         </div>
 
         <div className="col-span-1 md:col-span-3 space-y-8 max-w-3xl">
-          
-          <div className="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-6 md:p-8 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-1">Public Profile</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">This information will be displayed to your team and collaborators.</p>
-            </div>
+         
             
-            <form action={updateProfile} className="p-6 md:p-8">
-              <div className="flex items-center gap-6 mb-10">
-                <div className="w-20 h-20 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-3xl font-bold text-zinc-900 dark:text-white shadow-sm">
-                  {dbUser.name?.charAt(0).toUpperCase() || "U"}
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Profile Avatar</h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs leading-relaxed">
-                    Your avatar is automatically generated from your display name. Custom uploads coming soon.
-                  </p>
-                </div>
-              </div>
+           <ProfileForm defaultName={dbUser.name || ""} />
+       
 
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-2">Display Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    defaultValue={dbUser.name || ""}
-                    className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white focus:border-black dark:focus:border-white transition-all text-sm font-medium text-zinc-900 dark:text-white"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-2">Email Address</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
-                    <input
-                      type="email"
-                      disabled
-                      defaultValue={dbUser.email || ""}
-                      className="w-full pl-11 pr-4 py-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-medium text-zinc-500 dark:text-zinc-400 cursor-not-allowed opacity-70"
-                    />
-                  </div>
-                  <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-500 mt-2 uppercase tracking-wide">
-                    Permanently tied to your authentication provider
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-10 pt-6 border-t border-zinc-100 dark:border-zinc-800/50 flex justify-end">
-                <button 
-                  type="submit"
-                  className="flex items-center gap-2 bg-black hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-black px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95"
-                >
-                  <Save className="w-4 h-4" /> Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div className="bg-red-50/50 dark:bg-red-950/10 border border-red-200 dark:border-red-900/30 rounded-2xl overflow-hidden mt-8">
-            <div className="p-6 md:p-8 flex flex-col sm:flex-row sm:items-start md:items-center justify-between gap-6">
-              <div>
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-500 mb-1.5">
-                  <AlertTriangle className="w-5 h-5" />
-                  <h2 className="text-lg font-bold">Danger Zone</h2>
-                </div>
-                <p className="text-sm font-medium text-red-600/80 dark:text-red-400/80 max-w-sm leading-relaxed">
-                  Permanently delete your account and all of your schema projects. This action cannot be undone.
-                </p>
-              </div>
-              <form action={deleteAccount} className="shrink-0">
-                <button type="submit" className="whitespace-nowrap px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all shadow-md active:scale-95">
-                  Delete Account
-                </button>
-              </form>
-            </div>
-          </div>
+          <DeleteAccountForm userEmail={dbUser.email || ""}/>
         </div>
       </div>
     </div>

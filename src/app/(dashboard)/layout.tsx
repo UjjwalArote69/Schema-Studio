@@ -1,32 +1,26 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Database, Sparkles, BookOpen, Clock, ChevronRight } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/logout-button";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
-import {prisma}  from "@/lib/prisma";
+import { getUser, getRecentProjects } from "@/lib/dashboard-queries";
 
 export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  console.log("MY DB URL IS:", process.env.DATABASE_URL_UNPOOLED);
+
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as {id: string})?.id;
+  const userId = session?.user?.id;
   if (!session || !userId) {redirect("/login");}
 
   const [User, recentProjects] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId } }),
-    prisma.project.findMany({
-      where: { userId },
-      orderBy: { updatedAt: "desc" },
-      take: 3,
-      select: { id: true, name: true }
-    })
+    getUser(userId),
+    getRecentProjects(userId),
   ]);
 
   if (!User) return null;
@@ -61,7 +55,7 @@ export default async function ProtectedLayout({
                 Recent
               </h3>
               <div className="space-y-0.5">
-                {recentProjects.map((project: any) => (
+                {recentProjects.map((project) => (
                   <Link 
                     key={project.id} 
                     href={`/editor/${project.id}`}

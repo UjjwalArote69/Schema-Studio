@@ -7,6 +7,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { Database, Loader2 } from "lucide-react";
 import { GithubIcon } from "@/components/ui/icons";
+import { registerSchema } from "@/lib/validations";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -22,6 +23,11 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
+    const result = registerSchema.safeParse({name, email, password});
+    if (!result.success) {
+      setError(result.error.message[0] || "Invalid input.");
+      return;
+    }
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -30,8 +36,8 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Something went wrong");
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || "Something went wrong");
       }
 
       // Registration successful, redirect to login
