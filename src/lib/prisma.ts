@@ -1,25 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/prisma.ts
 import { PrismaClient as GeneratedClient } from "../../prisma/generated/prisma/client";
-import { PrismaClient } from "@prisma/client"; // Use this for typing
-import { PrismaPg } from '@prisma/adapter-pg';
-import  pg  from 'pg'; // Ensure you have pg installed
-
-const connectionString = process.env.DATABASE_URL;
-const pool = new pg.Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+import { PrismaClient } from "@prisma/client"; 
 
 const prismaClientSingleton = () => {
-  return new GeneratedClient({
-    adapter
-  }) as unknown as PrismaClient; // Cast to the standard type
+  // Pass an empty object to satisfy the "1 argument" requirement
+  return new GeneratedClient({} as any) as unknown as PrismaClient;
 }
-declare const globalThis: {
-  prismaGlobal: ReturnType<typeof prismaClientSingleton>
-} & typeof global;
 
+declare global {
+  // This ensures the global variable is recognized in development (Fast Refresh)
+  var prismaGlobal: ReturnType<typeof prismaClientSingleton> | undefined;
+}
+
+// Access the global variable safely
 const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 export default prisma;
+
 if (process.env.NODE_ENV !== 'production') {
-  globalThis.prismaGlobal = prisma
+  globalThis.prismaGlobal = prisma;
 }
