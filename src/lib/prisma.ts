@@ -6,31 +6,36 @@ import ws from 'ws';
 
 neonConfig.webSocketConstructor = ws;
 
-const prismaClientSingleton = () => {
+declare global {
+  var prismaGlobal: PrismaClient | undefined;
+}
+
+function createPrismaClient() {
   const connectionString =
     process.env.DATABASE_URL_UNPOOLED ||
     process.env.DATABASE_URL;
 
   if (!connectionString) {
     throw new Error(
-      "No database connection string found. " +
-      "Set DATABASE_URL_UNPOOLED (or DATABASE_URL) in your .env.local file."
+      "DATABASE_URL_UNPOOLED or DATABASE_URL must be set in .env.local"
     );
   }
 
   const pool = new Pool({ connectionString });
   const adapter = new PrismaNeon(pool as any);
-
   return new PrismaClient({ adapter } as any);
-};
-
-declare global {
-  var prismaGlobal: ReturnType<typeof prismaClientSingleton> | undefined;
 }
 
-export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
-
-// Keep a single instance in all environments to avoid exhausting the pool
-globalThis.prismaGlobal = prisma;
+// Lazy getter — only creates the client when first accessed, never at import time
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_, prop) {
+    if (!globalThis.prismaGlobal) {
+      globalThis.prismaGlobal = createPrismaClient();
+    }
+    const client = globalThis.prismaGlobal;
+    const value = (client as any)[prop];
+    return typeof value === 'function' ? value.bind(client) : value;
+  }
+});
 
 export default prisma;
