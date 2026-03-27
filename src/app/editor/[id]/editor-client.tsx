@@ -89,55 +89,56 @@ function EditorClient({ project }: { project: any }) {
 
   // ── Authenticated toolbar ───────────────────────────────────
   const toolbar = (
-    <div className="h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-4 z-10 shadow-sm transition-colors duration-300">
-      {/* Left */}
-      <div className="flex items-center gap-3">
+    <div className="h-14 bg-white dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-2 sm:px-4 z-10 shadow-sm transition-colors duration-300 w-full">
+      {/* Left: Branding & Status */}
+      <div className="flex items-center gap-1 sm:gap-3 flex-1 min-w-0">
         <Link
           href="/dashboard"
-          className="p-1.5 text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all"
+          className="p-1.5 text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all shrink-0"
           title="Back to Dashboard"
         >
           <ChevronLeft className="w-5 h-5" />
         </Link>
 
-        <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+        <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-0.5 hidden sm:block shrink-0" />
 
-        <div className="flex items-center gap-2 font-semibold select-none cursor-default opacity-80">
+        <div className="hidden md:flex items-center gap-2 font-semibold select-none cursor-default opacity-80 shrink-0">
           <Database className="w-4 h-4 text-black dark:text-white" />
-          <span className="text-sm text-zinc-900 dark:text-zinc-100 hidden sm:inline-block">
+          <span className="text-sm text-zinc-900 dark:text-zinc-100">
             Schema Studio
           </span>
         </div>
 
-        <span className="text-zinc-300 dark:text-zinc-700 font-light hidden sm:inline-block">
+        <span className="text-zinc-300 dark:text-zinc-700 font-light hidden md:inline-block shrink-0">
           /
         </span>
 
-        <div className="relative group flex items-center">
+        {/* Project Name Input (Flexible & Truncated) */}
+        <div className="relative group flex items-center min-w-0 flex-1 max-w-[200px]">
           <input
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
-            className="text-sm font-medium text-zinc-900 dark:text-zinc-100 bg-transparent border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 focus:bg-zinc-50 dark:focus:bg-zinc-900 focus:outline-none rounded px-2 py-1 w-40 sm:w-56 transition-all"
+            className="text-sm font-bold sm:font-medium text-zinc-900 dark:text-zinc-100 bg-transparent border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 focus:border-zinc-300 dark:focus:border-zinc-700 focus:bg-zinc-50 dark:focus:bg-zinc-900 focus:outline-none rounded px-1.5 sm:px-2 py-1 w-full transition-all truncate"
           />
-          <PenLine className="w-3 h-3 text-zinc-400 absolute right-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+          <PenLine className="w-3 h-3 text-zinc-400 absolute right-2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
         </div>
 
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-50 dark:bg-zinc-900/50 rounded-full border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-500 ml-2 shadow-sm hidden md:flex">
+        {/* Save Indicator */}
+        <div className="flex items-center justify-center p-1.5 sm:px-2.5 sm:py-1 bg-zinc-50 dark:bg-zinc-900/50 rounded-full border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-500 shadow-sm shrink-0">
           {isSaving ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin text-zinc-500" /> Saving
-            </>
+            <Loader2 className="w-3.5 h-3.5 sm:w-3 sm:h-3 animate-spin text-zinc-500" /> 
           ) : (
-            <>
-              <Cloud className="w-3 h-3 text-green-500" /> Saved
-            </>
+            <Cloud className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-green-500" />
           )}
+          <span className="hidden sm:inline ml-1.5">{isSaving ? "Saving" : "Saved"}</span>
         </div>
       </div>
 
-      {/* Right */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-0.5 mr-1 hidden md:flex">
+      {/* Right: Actions */}
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 pl-2">
+        
+        {/* Undo/Redo - Hidden on small screens to save space */}
+        <div className="items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-0.5 hidden lg:flex">
           <button
             onClick={undo}
             disabled={past.length === 0}
@@ -159,25 +160,28 @@ function EditorClient({ project }: { project: any }) {
         <button
           onClick={() =>
             addTable({
-              x: Math.random() * 200 + 100,
-              y: Math.random() * 200 + 100,
+              x: Math.random() * 100 + 50,
+              y: Math.random() * 100 + 50,
             })
           }
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-black dark:text-white rounded-md text-xs font-semibold transition-colors border border-zinc-200 dark:border-zinc-800"
+          title="Add Table"
+          className="flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-black dark:text-white rounded-md text-xs font-semibold transition-colors border border-zinc-200 dark:border-zinc-800 shrink-0"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
           <span className="hidden sm:inline">Add Table</span>
         </button>
 
         <button
           onClick={() => setIsExportOpen(true)}
           disabled={tables.length === 0}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-md text-xs font-semibold transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Export Code"
+          className="flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 bg-black dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-md text-xs font-semibold transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
-          <Code className="w-3.5 h-3.5" /> Export Code
+          <Code className="w-5 h-5 sm:w-3.5 sm:h-3.5" /> 
+          <span className="hidden sm:inline">Export</span>
         </button>
 
-        <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-1" />
+        <div className="w-px h-5 bg-zinc-200 dark:bg-zinc-800 mx-0.5 sm:mx-1" />
         <ThemeToggle />
       </div>
     </div>

@@ -13,6 +13,12 @@ export function SidebarNav() {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
+  // Helper function to close mobile menu automatically upon navigation
+  const closeMobileMenu = () => {
+    const toggle = document.getElementById("mobile-menu-toggle") as HTMLInputElement;
+    if (toggle) toggle.checked = false;
+  };
+
   return (
     <nav className="flex flex-col gap-1">
       <h3 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-2">
@@ -20,7 +26,6 @@ export function SidebarNav() {
       </h3>
       
       {navLinks.map((link) => {
-        // Match exact path, or if we are in a sub-route
         const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
         const Icon = link.icon;
 
@@ -28,6 +33,7 @@ export function SidebarNav() {
           <Link
             key={link.name}
             href={link.href}
+            onClick={closeMobileMenu}
             className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${
               isActive
                 ? "bg-white dark:bg-zinc-800/80 text-black dark:text-white shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-700 font-semibold"

@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Database, Sparkles, BookOpen, Clock, ChevronRight } from "lucide-react";
+// Added Menu and X icons for mobile toggle
+import { Database, Sparkles, BookOpen, Clock, ChevronRight, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/logout-button";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
@@ -13,10 +14,9 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  if (!session || !userId) {redirect("/login");}
+  if (!session || !userId) { redirect("/login"); }
 
   const [User, recentProjects] = await Promise.all([
     getUser(userId),
@@ -28,17 +28,30 @@ export default async function ProtectedLayout({
   return (
     <div className="flex h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans overflow-hidden">
       
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50/30 dark:bg-[#0c0c0e] flex flex-col">
+      {/* MOBILE MENU STATE HANDLER (Hidden Checkbox) */}
+      <input type="checkbox" id="mobile-menu-toggle" className="peer hidden" />
+
+      {/* MOBILE OVERLAY: Closes sidebar when clicking outside */}
+      <label 
+        htmlFor="mobile-menu-toggle" 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden peer-checked:block md:hidden transition-opacity"
+      />
+      
+      {/* SIDEBAR */}
+      <aside className="fixed inset-y-0 left-0 z-50 w-64 md:w-64 transform -translate-x-full transition-transform duration-300 ease-in-out peer-checked:translate-x-0 md:relative md:translate-x-0 flex flex-col border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#0c0c0e]">
         
         {/* Brand Header */}
-        <div className="h-14 flex items-center px-5 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="h-14 flex items-center justify-between px-5 border-b border-zinc-200 dark:border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-2.5 font-semibold text-sm hover:opacity-80 transition-opacity">
             <div className="p-1 bg-black dark:bg-white rounded-[6px]">
               <Database className="w-4 h-4 text-white dark:text-black" />
             </div>
             <span>SchemaStudio</span>
           </Link>
+          {/* Close Menu Button (Mobile Only) */}
+          <label htmlFor="mobile-menu-toggle" className="md:hidden p-1 cursor-pointer text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+            <X className="w-5 h-5" />
+          </label>
         </div>
 
         {/* Scrollable Nav Area */}
@@ -96,14 +109,13 @@ export default async function ProtectedLayout({
         </div>
 
         {/* User Profile & Footer */}
-        <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+        <div className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
           <div className="flex items-center justify-between mb-2 px-2">
             <span className="text-xs font-medium text-zinc-500">Theme</span>
             <ThemeToggle />
           </div>
           
           <div className="flex items-center gap-2.5 p-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
-            {/* Solid, non-gradient Avatar */}
             <div className="w-8 h-8 rounded bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black flex items-center justify-center text-xs font-bold flex-shrink-0">
               {User.name?.charAt(0) || "U"}
             </div>
@@ -116,10 +128,28 @@ export default async function ProtectedLayout({
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto relative">
-        {children}
-      </main>
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        {/* Mobile Header */}
+        <header className="md:hidden h-14 flex items-center justify-between px-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-2.5 font-semibold text-sm">
+            <div className="p-1 bg-black dark:bg-white rounded-[6px]">
+              <Database className="w-4 h-4 text-white dark:text-black" />
+            </div>
+            <span>SchemaStudio</span>
+          </Link>
+          <label htmlFor="mobile-menu-toggle" className="p-1.5 -mr-1.5 cursor-pointer text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+            <Menu className="w-5 h-5" />
+          </label>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto relative">
+          {children}
+        </main>
+      </div>
+      
     </div>
   );
 }

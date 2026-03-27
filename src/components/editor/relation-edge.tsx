@@ -2,6 +2,7 @@
 
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getSmoothStepPath } from "@xyflow/react";
 import { useSchemaStore, Relation } from "@/store/useSchemaStore";
+import { X } from "lucide-react";
 
 type CustomEdgeProps = EdgeProps & {
   data?: {
@@ -21,7 +22,8 @@ export function RelationEdge({
   markerEnd,
   data,
 }: CustomEdgeProps) {
-  const { updateRelation } = useSchemaStore();
+  const { updateRelation, removeRelation } = useSchemaStore();
+  
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
@@ -30,10 +32,17 @@ export function RelationEdge({
   if (!data?.relation) return null;
 
   // Cycle through the relationship types
-  const handleToggleType = () => {
+  const handleToggleType = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering edge selection
     const current = data.relation.type;
     const nextType = current === "1:n" ? "m:n" : current === "m:n" ? "1:1" : "1:n";
     updateRelation(data.relation.id, nextType);
+  };
+
+  // Delete the relation
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering edge selection
+    removeRelation(data.relation.id);
   };
 
   return (
@@ -46,15 +55,26 @@ export function RelationEdge({
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            pointerEvents: "all", // CRITICAL: Makes the button clickable
+            pointerEvents: "all", // CRITICAL: Makes the buttons clickable
           }}
-          className="nodrag nopan z-50"
+          className="nodrag nopan z-50 flex items-center bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-full shadow-sm overflow-hidden"
         >
           <button
             onClick={handleToggleType}
-            className="px-2 py-1 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-500 text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 rounded-full shadow-sm transition-all active:scale-95"
+            title="Change relationship type"
+            className="px-2 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-blue-500 text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400 transition-colors"
           >
             {data.relation.type}
+          </button>
+          
+          <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700" />
+          
+          <button
+            onClick={handleDelete}
+            title="Delete relationship"
+            className="p-1 hover:bg-red-50 dark:hover:bg-red-950/30 text-zinc-400 hover:text-red-500 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </EdgeLabelRenderer>
