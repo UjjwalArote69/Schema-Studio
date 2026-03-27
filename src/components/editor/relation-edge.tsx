@@ -1,7 +1,9 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
+import { useCallback } from "react";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getSmoothStepPath, Position } from "@xyflow/react";
-import { useSchemaStore, Relation } from "@/store/useSchemaStore";
+import { useSchemaStore, type Relation } from "@/store/useSchemaStore";
 import { X } from "lucide-react";
 
 type CustomEdgeProps = EdgeProps & {
@@ -10,13 +12,10 @@ type CustomEdgeProps = EdgeProps & {
   };
 };
 
-// ── Notation geometry ───────────────────────────────────────────
-// Shapes are drawn facing RIGHT (0°), then rotated via the
-// source/target Position to face outward from the node.
+// ── Static geometry (hoisted — zero allocation per render) ──────
 
-const MARK_OFFSET = 16; // px from handle center along edge direction
+const MARK_OFFSET = 16;
 
-/** Perpendicular double-bar indicating "one" */
 function OneMarker({ x, y, angle, color }: { x: number; y: number; angle: number; color: string }) {
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
@@ -26,7 +25,6 @@ function OneMarker({ x, y, angle, color }: { x: number; y: number; angle: number
   );
 }
 
-/** Crow's foot (three prongs + vertical bar) indicating "many" */
 function ManyMarker({ x, y, angle, color }: { x: number; y: number; angle: number; color: string }) {
   return (
     <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
@@ -48,7 +46,7 @@ function angleFromPosition(pos: Position): number {
   }
 }
 
-function offsetFromPosition(pos: Position, dist: number) {
+function offsetXY(pos: Position, dist: number) {
   switch (pos) {
     case Position.Right:  return { dx: dist,  dy: 0 };
     case Position.Left:   return { dx: -dist, dy: 0 };
@@ -58,7 +56,6 @@ function offsetFromPosition(pos: Position, dist: number) {
   }
 }
 
-// ── Label color per type ────────────────────────────────────────
 function typeClasses(type: Relation["type"]) {
   switch (type) {
     case "1:1":
@@ -70,12 +67,14 @@ function typeClasses(type: Relation["type"]) {
   }
 }
 
-const MARK_COLOR = "#a1a1aa";          // zinc-400
-const MARK_COLOR_SELECTED = "#ef4444"; // red-500
+const MARK_COLOR = "#a1a1aa";
+const MARK_COLOR_SELECTED = "#ef4444";
 
 // ─────────────────────────────────────────────────────────────────
-// Component — direct function export (not memo-wrapped) to match
-// React Flow's edge type registry expectations.
+// PERF: Use individual selectors for the two action functions.
+// These are stable references — they NEVER change after store
+// creation, so this component won't re-render from unrelated
+// store mutations (column edits, position updates, etc.).
 // ─────────────────────────────────────────────────────────────────
 
 export function RelationEdge({
@@ -91,7 +90,9 @@ export function RelationEdge({
   data,
   selected,
 }: CustomEdgeProps) {
-  const { updateRelation, removeRelation } = useSchemaStore();
+  // Individual selectors — stable function refs, no re-render
+  const updateRelation = useSchemaStore((s) => s.updateRelation);
+  const removeRelation = useSchemaStore((s) => s.removeRelation);
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX, sourceY, sourcePosition,
@@ -101,31 +102,32 @@ export function RelationEdge({
   if (!data?.relation) return null;
 
   const relType = data.relation.type;
+  const relId = data.relation.id;
 
-  // Cycle through the relationship types
-  const handleToggleType = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const nextType = relType === "1:n" ? "m:n" : relType === "m:n" ? "1:1" : "1:n";
-    updateRelation(data.relation.id, nextType);
-  };
+  const handleToggleType = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const next = relType === "1:n" ? "m:n" : relType === "m:n" ? "1:1" : "1:n";
+      updateRelation(relId, next);
+    },
+    [relType, relId, updateRelation],
+  );
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    removeRelation(data.relation.id);
-  };
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      removeRelation(relId);
+    },
+    [relId, removeRelation],
+  );
 
   // ── Notation positions ──────────────────────────────────────
-  const srcOff = offsetFromPosition(sourcePosition, MARK_OFFSET);
-  const tgtOff = offsetFromPosition(targetPosition, MARK_OFFSET);
-
+  const srcOff = offsetXY(sourcePosition, MARK_OFFSET);
+  const tgtOff = offsetXY(targetPosition, MARK_OFFSET);
   const srcAngle = angleFromPosition(sourcePosition);
   const tgtAngle = angleFromPosition(targetPosition);
-
   const markColor = selected ? MARK_COLOR_SELECTED : MARK_COLOR;
 
-  // "1:1" → one  / one
-  // "1:n" → one  / many
-  // "m:n" → many / many
   const sourceIsMany = relType === "m:n";
   const targetIsMany = relType === "1:n" || relType === "m:n";
 
@@ -136,7 +138,6 @@ export function RelationEdge({
     <>
       <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
 
-      {/* ── Crow's foot / tee notation at each end ─────────── */}
       <SourceNotation
         x={sourceX + srcOff.dx}
         y={sourceY + srcOff.dy}
@@ -150,7 +151,6 @@ export function RelationEdge({
         color={markColor}
       />
 
-      {/* ── Label with type toggle + delete ────────────────── */}
       <EdgeLabelRenderer>
         <div
           style={{

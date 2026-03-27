@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useCallback } from "react";
 import {
   ReactFlow,
   Background,
@@ -25,6 +26,12 @@ interface SchemaCanvasProps {
   onImportSQL?: () => void;
   isReady?: boolean;
 }
+
+// ── Static objects hoisted out of the component ─────────────────
+// React Flow shallow-compares these props. Creating new object
+// literals inside JSX causes unnecessary internal recalculations.
+const PRO_OPTIONS = { hideAttribution: true } as const;
+const DEFAULT_EDGE_OPTIONS = { type: "relationEdge" } as const;
 
 export function SchemaCanvas({
   editor,
@@ -63,6 +70,21 @@ export function SchemaCanvas({
     <AIArchitect />
   );
 
+  // PERF: Memoize the delete callback so BulkActionsToolbar
+  // doesn't get a new onDelete prop on every render.
+  const handleBulkDelete = useCallback(() => {
+    removeTables(selectedNodeIds);
+  }, [removeTables, selectedNodeIds]);
+
+  // PERF: Memoize Controls className since it depends on selectedNodeId
+  const controlsClassName = useMemo(
+    () =>
+      `shadow-lg border-none dark:text-black transition-all overflow-hidden rounded-md m-4 md:m-6 [&>button]:bg-white dark:[&>button]:bg-zinc-900 [&>button]:border-zinc-200 dark:[&>button]:border-zinc-800 hover:[&>button]:bg-zinc-50 dark:hover:[&>button]:bg-zinc-800 [&>button>svg]:fill-zinc-700 dark:[&>button>svg]:fill-zinc-300 ${
+        selectedNodeId ? "mb-[65vh] md:mb-28" : "mb-24 md:mb-28"
+      }`,
+    [selectedNodeId],
+  );
+
   return (
     <div className="h-screen w-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
       <style>{`
@@ -92,11 +114,10 @@ export function SchemaCanvas({
       <div className="flex-1 w-full relative overflow-hidden">
         {overlay}
 
-        {/* Bulk actions — renders only when 2+ nodes selected */}
         <BulkActionsToolbar
           selectedCount={selectedNodeIds.length}
           totalCount={tables.length}
-          onDelete={() => removeTables(selectedNodeIds)}
+          onDelete={handleBulkDelete}
           onSelectAll={selectAll}
           onDeselect={clearSelection}
         />
@@ -118,19 +139,13 @@ export function SchemaCanvas({
           deleteKeyCode={null}
           fitView
           connectOnClick={true}
-          /* ── Multi-select configuration ─────────────────────
-           *  Shift + drag  → box-select  (selectionKeyCode default)
-           *  Cmd/Ctrl + click → additive select (multiSelectionKeyCode default)
-           *  selectionMode="partial" → nodes only need to partially
-           *     overlap the selection box to be included
-           */
           selectionMode={SelectionMode.Partial}
           className="dark:bg-zinc-950 transition-colors duration-300"
-          proOptions={{ hideAttribution: true }}
+          proOptions={PRO_OPTIONS}
           elevateNodesOnSelect
           minZoom={0.1}
           maxZoom={2}
-          defaultEdgeOptions={{ type: "relationEdge" }}
+          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
         >
           <Background
             color="#a1a1aa"
@@ -150,13 +165,10 @@ export function SchemaCanvas({
 
           <Controls
             position="bottom-right"
-            className={`shadow-lg border-none dark:text-black transition-all overflow-hidden rounded-md m-4 md:m-6 [&>button]:bg-white dark:[&>button]:bg-zinc-900 [&>button]:border-zinc-200 dark:[&>button]:border-zinc-800 hover:[&>button]:bg-zinc-50 dark:hover:[&>button]:bg-zinc-800 [&>button>svg]:fill-zinc-700 dark:[&>button>svg]:fill-zinc-300 ${
-              selectedNodeId ? "mb-[65vh] md:mb-28" : "mb-24 md:mb-28"
-            }`}
+            className={controlsClassName}
           />
         </ReactFlow>
 
-        {/* Single-table editor — hidden during multi-select */}
         <FloatingSidebar selectedNodeId={selectedNodeId} />
       </div>
 

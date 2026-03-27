@@ -8,18 +8,19 @@ import { X, Plus, Trash2, Key, Hash, Settings2, GripVertical, Cable, ChevronDown
 const DATA_TYPES = ["UUID", "VARCHAR", "TEXT", "INT", "FLOAT", "BOOLEAN", "DATE", "JSON"];
 
 export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | null }) {
-  const {
-    tables,
-    relations,
-    updateTableName,
-    addColumn,
-    updateColumn,
-    removeColumn,
-    removeTable,
-    reorderColumns,
-    removeRelation,
-    updateRelation,
-  } = useSchemaStore();
+  // PERF: Individual selectors — only re-render when tables or
+  // relations change, not on every undo/redo/past/future update.
+  const tables = useSchemaStore((s) => s.tables);
+  const relations = useSchemaStore((s) => s.relations);
+  // Actions are stable references — never cause re-renders
+  const updateTableName = useSchemaStore((s) => s.updateTableName);
+  const addColumn = useSchemaStore((s) => s.addColumn);
+  const updateColumn = useSchemaStore((s) => s.updateColumn);
+  const removeColumn = useSchemaStore((s) => s.removeColumn);
+  const removeTable = useSchemaStore((s) => s.removeTable);
+  const reorderColumns = useSchemaStore((s) => s.reorderColumns);
+  const removeRelation = useSchemaStore((s) => s.removeRelation);
+  const updateRelation = useSchemaStore((s) => s.updateRelation);
 
   // ── Drag state ──────────────────────────────────────────────
   // sourceIndex lives in a ref so mid-drag events don't cause
