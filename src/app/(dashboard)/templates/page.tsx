@@ -9,6 +9,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { createFromTemplateById } from "@/app/actions/schema-actions";
 import { TEMPLATE_METADATA, type TemplateMeta } from "@/data/template-metadata";
+import { TemplatePreview } from "@/components/templates/template-preview";
 
 // ── Icon map (only the 12 icons actually used by templates) ───
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -122,26 +123,23 @@ function TemplateCard({ template }: { template: TemplateMeta }) {
 
   return (
     <div className="group flex flex-col bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:shadow-xl hover:border-black dark:hover:border-white transition-all duration-300">
-      <div className="h-40 bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-center relative overflow-hidden p-6">
+      {/* Preview Area */}
+      <div className="h-40 bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-center relative overflow-hidden">
+        {/* Blueprint grid background */}
         <div className="absolute inset-0 opacity-[0.2] dark:opacity-[0.15] bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:14px_24px]" />
 
-        <div className="flex gap-4 relative z-10 items-center justify-center w-full">
-          {template.tableCount > 0 ? (
-            Array.from({ length: Math.min(template.tableCount, 3) }).map((_, i) => (
-              <div
-                key={i}
-                className="w-14 h-20 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-sm animate-pulse group-hover:-translate-y-1 transition-transform duration-300"
-                style={{ animationDelay: `${i * 150}ms`, animationDuration: "3s" }}
-              >
-                <div className="h-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 rounded-t-lg" />
-              </div>
-            ))
-          ) : (
-            <div className="w-20 h-20 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Plus className="w-8 h-8 text-zinc-400" />
-            </div>
-          )}
-        </div>
+        {template.preview && template.preview.tables.length > 0 ? (
+          /* Real SVG schema preview */
+          <TemplatePreview
+            preview={template.preview}
+            className="w-full h-full relative z-10 opacity-70 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-500"
+          />
+        ) : (
+          /* Blank canvas empty state */
+          <div className="relative z-10 w-20 h-20 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+            <Plus className="w-8 h-8 text-zinc-400" />
+          </div>
+        )}
       </div>
 
       <div className="p-6 flex flex-col flex-1">

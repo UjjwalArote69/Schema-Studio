@@ -21,10 +21,11 @@ import { RelationEdge } from "@/components/editor/relation-edge";
  *
  * KEY DESIGN: Zustand `tables`/`relations` are the single source of truth.
  * React Flow nodes/edges are derived state, synced via useEffect.
- * We use plain useState (NOT useNodesState) to prevent React Flow's
- * internal state from fighting with Zustand. Every onNodesChange call
- * reconciles against the current Zustand state via refs, so deleted
- * nodes can never reappear.
+ *
+ * SELECTION MODEL: selectedNodeIds is derived from the `selected` property
+ * on React Flow nodes (set via onNodesChange "select" changes). This means
+ * React Flow owns the selection state and we simply read it — no fighting
+ * between two sources of truth.
  */
 export function useSchemaEditor() {
   const {
@@ -34,6 +35,7 @@ export function useSchemaEditor() {
     addTable,
     addRelation,
     removeTable,
+    removeTables,
     removeRelation,
     setSchema,
     undo,
@@ -44,7 +46,6 @@ export function useSchemaEditor() {
     commitDrag,
   } = useSchemaStore();
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
 
   // ── Stable type registries ────────────────────────────────────
@@ -56,15 +57,25 @@ export function useSchemaEditor() {
   const [edges, setEdges] = useState<Edge[]>([]);
 
   // Refs to latest Zustand state — used inside callbacks so they
-  // never see stale closures.  This is the key to the reconciliation.
+  // never see stale closures.
   const tablesRef = useRef(tables);
   tablesRef.current = tables;
   const relationsRef = useRef(relations);
   relationsRef.current = relations;
 
+  // ── Derive selection from React Flow node state ───────────────
+  // This is always in sync — no extra state to manage.
+  const selectedNodeIds = useMemo(
+    () => nodes.filter((n) => n.selected).map((n) => n.id),
+    [nodes],
+  );
+
+  // Single-select convenience: the ID when exactly one node is
+  // selected, null otherwise. The FloatingSidebar consumes this.
+  const selectedNodeId =
+    selectedNodeIds.length === 1 ? selectedNodeIds[0] : null;
+
   // ── Sync Zustand tables → React Flow nodes ────────────────────
-  // This effect is AUTHORITATIVE: it rebuilds the node array from
-  // Zustand tables, preserving only `selected` from React Flow state.
   useEffect(() => {
     setNodes((prev) => {
       const prevMap = new Map(prev.map((n) => [n.id, n]));
@@ -106,13 +117,10 @@ export function useSchemaEditor() {
 
   // ── Handle React Flow node changes ────────────────────────────
   // Position, selection, dimensions — but NEVER removes.
-  // After applying changes, reconcile: drop any node whose id
-  // isn't in the current Zustand tables (via ref, always fresh).
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds) => {
       const safe = changes.filter((c) => c.type !== "remove");
       const updated = applyNodeChanges(safe, nds);
-      // Reconcile — this is what prevents deleted nodes from reappearing
       const validIds = new Set(tablesRef.current.map((t) => t.id));
       return updated.filter((n) => validIds.has(n.id));
     });
@@ -128,7 +136,26 @@ export function useSchemaEditor() {
     });
   }, []);
 
-  // ── Keyboard shortcuts (Undo / Redo / Delete) ─────────────────
+  // ── Selection actions ─────────────────────────────────────────
+
+  const selectAll = useCallback(() => {
+    setNodes((prev) =>
+      prev.map((n) => (n.selected ? n : { ...n, selected: true })),
+    );
+    setSelectedEdgeId(null);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setNodes((prev) =>
+      prev.map((n) => (n.selected ? { ...n, selected: false } : n)),
+    );
+    setEdges((prev) =>
+      prev.map((e) => (e.selected ? { ...e, selected: false } : e)),
+    );
+    setSelectedEdgeId(null);
+  }, []);
+
+  // ── Keyboard shortcuts ────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -138,6 +165,7 @@ export function useSchemaEditor() {
       )
         return;
 
+      // Undo
       if ((e.ctrlKey || e.metaKey) && e.key === "z") {
         if (e.shiftKey) {
           e.preventDefault();
@@ -146,25 +174,61 @@ export function useSchemaEditor() {
           e.preventDefault();
           undo();
         }
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+        return;
+      }
+
+      // Redo (Ctrl+Y)
+      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
         e.preventDefault();
         redo();
-      } else if (e.key === "Delete" || e.key === "Backspace") {
-        if (selectedNodeId) {
+        return;
+      }
+
+      // Select All
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        selectAll();
+        return;
+      }
+
+      // Delete / Backspace — bulk-aware
+      if (e.key === "Delete" || e.key === "Backspace") {
+        // Read fresh selection from nodes ref-equivalent (via closure
+        // over setNodes is stale — read from the latest derived value
+        // via the captured selectedNodeIds).
+        // Since this effect re-runs when selectedNodeIds changes, the
+        // closure always has the latest value.
+        if (selectedNodeIds.length > 0) {
           e.preventDefault();
-          removeTable(selectedNodeId);
-          setSelectedNodeId(null);
+          removeTables(selectedNodeIds);
         } else if (selectedEdgeId) {
           e.preventDefault();
           removeRelation(selectedEdgeId);
           setSelectedEdgeId(null);
         }
+        return;
+      }
+
+      // Escape — clear selection
+      if (e.key === "Escape") {
+        clearSelection();
+        return;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo, selectedNodeId, selectedEdgeId, removeTable, removeRelation]);
+  }, [
+    undo,
+    redo,
+    selectedNodeIds,
+    selectedEdgeId,
+    removeTable,
+    removeTables,
+    removeRelation,
+    selectAll,
+    clearSelection,
+  ]);
 
   // ── Connection handler ────────────────────────────────────────
   const onConnect = useCallback(
@@ -193,9 +257,16 @@ export function useSchemaEditor() {
     beginDrag();
   }, [beginDrag]);
 
+  /**
+   * When dragging a multi-selection, React Flow passes ALL dragged
+   * nodes in the third parameter. We update every moved node's
+   * position in Zustand, then commit the drag as a single undo entry.
+   */
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      updateTablePosition(node.id, node.position);
+    (_event: React.MouseEvent, _node: Node, draggedNodes: Node[]) => {
+      for (const n of draggedNodes) {
+        updateTablePosition(n.id, n.position);
+      }
       commitDrag();
     },
     [updateTablePosition, commitDrag],
@@ -210,18 +281,20 @@ export function useSchemaEditor() {
   );
 
   // ── Click handlers ────────────────────────────────────────────
-  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    setSelectedNodeId(node.id);
+  const onNodeClick = useCallback((_event: React.MouseEvent, _node: Node) => {
+    // React Flow manages the actual node selection state (single-click
+    // selects that node, Shift/Cmd+click adds to selection). We just
+    // clear the edge selection so the two don't overlap.
     setSelectedEdgeId(null);
   }, []);
 
   const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
     setSelectedEdgeId(edge.id);
-    setSelectedNodeId(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
+    // React Flow auto-deselects nodes on pane click.
+    // selectedNodeIds updates via the derived useMemo.
     setSelectedEdgeId(null);
   }, []);
 
@@ -231,6 +304,7 @@ export function useSchemaEditor() {
     relations,
     addTable,
     removeTable,
+    removeTables,
     setSchema,
     undo,
     redo,
@@ -254,6 +328,9 @@ export function useSchemaEditor() {
 
     // Selection
     selectedNodeId,
+    selectedNodeIds,
     selectedEdgeId,
+    selectAll,
+    clearSelection,
   };
 }

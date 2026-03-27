@@ -30,6 +30,8 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
     return generateCode(tables, relations, format);
   }, [tables, relations, format]);
 
+  const isEmpty = tables.length === 0;
+
   if (!isOpen) return null;
 
   const handleCopy = () => {
@@ -126,6 +128,20 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
 
         {/* Code Display Area */}
         <div className="p-6 bg-zinc-50/50 dark:bg-zinc-900/20">
+          {isEmpty ? (
+            /* Empty state when no tables exist */
+            <div className="flex flex-col items-center justify-center py-16 px-6 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30">
+              <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 mb-4">
+                <Database className="w-7 h-7 text-zinc-400" />
+              </div>
+              <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
+                No tables to export
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center max-w-xs">
+                Add at least one table to your schema before exporting. Use the canvas or the AI Architect to get started.
+              </p>
+            </div>
+          ) : (
           <div className="rounded-xl overflow-hidden bg-[#0d1117] border border-zinc-200 dark:border-zinc-800 shadow-inner flex flex-col">
             
             {/* Editor Window Header */}
@@ -146,6 +162,7 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
               <code>{generatedCode}</code>
             </pre>
           </div>
+          )}
         </div>
 
         {/* Modal Footer */}
@@ -159,7 +176,8 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
             {/* Download Button */}
             <button 
               onClick={handleDownload}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm border border-zinc-200 dark:border-zinc-800"
+              disabled={isEmpty}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm border border-zinc-200 dark:border-zinc-800 disabled:opacity-40 disabled:pointer-events-none"
             >
               {downloaded ? <Check className="w-4 h-4 text-green-500" /> : <Download className="w-4 h-4" />}
               {downloaded ? "Downloaded" : "Download File"}
@@ -168,7 +186,8 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
             {/* Copy Button */}
             <button 
               onClick={handleCopy}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-black dark:bg-white text-white dark:text-black dark:hover:bg-zinc-200 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-md shadow-zinc-900/10"
+              disabled={isEmpty}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-black dark:bg-white text-white dark:text-black dark:hover:bg-zinc-200 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-md shadow-zinc-900/10 disabled:opacity-40 disabled:pointer-events-none"
             >
               {copied ? <Check className="w-4 h-4 text-green-500 dark:text-green-600" /> : <Copy className="w-4 h-4" />}
               {copied ? "Copied" : "Copy Code"}

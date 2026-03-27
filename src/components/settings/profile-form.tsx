@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { updateProfile } from "@/app/actions/user-actions";
 
 interface ProfileFormProps {
@@ -26,8 +26,7 @@ export function ProfileForm({ defaultName }: ProfileFormProps) {
       try {
         await updateProfile(formData);
         setStatus("success");
-        // Auto-dismiss success message after 3 seconds
-        setTimeout(() => setStatus("idle"), 3000);
+        setTimeout(() => setStatus("idle"), 5000);
       } catch (err) {
         setStatus("error");
         setErrorMsg(
@@ -38,7 +37,42 @@ export function ProfileForm({ defaultName }: ProfileFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Success Banner */}
+      {status === "success" && (
+        <div className="flex items-center gap-3 p-3.5 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <p className="text-sm font-medium text-green-700 dark:text-green-300 flex-1">
+            Profile updated successfully.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStatus("idle")}
+            className="p-1 text-green-500 hover:text-green-700 dark:hover:text-green-200 rounded-md transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Error Banner */}
+      {status === "error" && (
+        <div className="flex items-center gap-3 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+          <p className="text-sm font-medium text-red-700 dark:text-red-300 flex-1">
+            {errorMsg}
+          </p>
+          <button
+            type="button"
+            onClick={() => setStatus("idle")}
+            className="p-1 text-red-500 hover:text-red-700 dark:hover:text-red-200 rounded-md transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Name Input */}
       <div>
         <label
           htmlFor="profile-name"
@@ -59,7 +93,8 @@ export function ProfileForm({ defaultName }: ProfileFormProps) {
         />
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Submit */}
+      <div className="flex items-center">
         <button
           type="submit"
           disabled={isPending || !name.trim()}
@@ -73,18 +108,6 @@ export function ProfileForm({ defaultName }: ProfileFormProps) {
             "Save Changes"
           )}
         </button>
-
-        {/* Inline feedback — no toast library needed */}
-        {status === "success" && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400 animate-in fade-in duration-200">
-            <CheckCircle2 className="w-4 h-4" /> Saved
-          </span>
-        )}
-        {status === "error" && (
-          <span className="flex items-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400 animate-in fade-in duration-200">
-            <AlertCircle className="w-4 h-4" /> {errorMsg}
-          </span>
-        )}
       </div>
     </form>
   );

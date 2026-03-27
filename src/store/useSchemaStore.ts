@@ -62,6 +62,7 @@ interface SchemaState {
   setSchema: (tables: Table[], relations: Relation[]) => void;
   addTable: (position: { x: number; y: number }) => void;
   removeTable: (id: string) => void;
+  removeTables: (ids: string[]) => void;
   updateTableName: (id: string, name: string) => void;
   updateTablePosition: (
     id: string,
@@ -74,6 +75,7 @@ interface SchemaState {
     data: Partial<Column>,
   ) => void;
   removeColumn: (tableId: string, columnId: string) => void;
+  reorderColumns: (tableId: string, fromIndex: number, toIndex: number) => void;
   addRelation: (relation: Omit<Relation, "id">) => void;
   removeRelation: (id: string) => void;
   updateRelation: (id: string, type: "1:1" | "1:n" | "m:n") => void;
@@ -102,15 +104,6 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
    * patches onto the undo stack.  Unchanged objects keep the same JS
    * reference (structural sharing), so React.memo on child components
    * works correctly.
-   *
-   * Before (full snapshot):
-   *   JSON.parse(JSON.stringify({ tables, relations }))   — O(n) clone
-   *   50 tables × 20 cols → ~1 000 objects deep-copied per action
-   *   50-entry undo stack  → ~50 full copies held in memory
-   *
-   * After (patch):
-   *   { op: "replace", path: ["tables", 3, "name"], value: "users" }
-   *   — O(1) allocation, ~100 bytes regardless of schema size
    */
   function withUndo(recipe: (draft: SchemaData) => void) {
     const { tables, relations, past } = get();
@@ -178,21 +171,10 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
 
     // -----------------------------------------------------------------
     // DRAG HANDLING
-    //
-    // Drags fire updateTablePosition many times per second.  We capture
-    // one reference snapshot when the drag starts, then when the drag
-    // ends we diff the snapshot against the current state and push a
-    // single patch entry.
-    //
-    // Wire up in the editor:
-    //   onNodeDragStart  → beginDrag()
-    //   onNodeDragStop   → commitDrag()
     // -----------------------------------------------------------------
 
     beginDrag: () => {
       const { tables, relations } = get();
-      // Safe to store by reference: updateTablePosition creates new
-      // table objects via spread, so these original references stay frozen.
       dragSnapshot = { tables, relations };
     },
 
@@ -203,7 +185,6 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
 
       const { tables, past } = get();
 
-      // Replay position deltas into an Immer recipe to produce patches.
       const [, patches, inversePatches] = produceWithPatches(snap, (draft) => {
         for (const draftTable of draft.tables) {
           const current = tables.find((t) => t.id === draftTable.id);
@@ -217,7 +198,7 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
         }
       });
 
-      if (patches.length === 0) return; // drag ended at same position
+      if (patches.length === 0) return;
       set({
         past: [...past, { patches, inversePatches }].slice(-MAX_HISTORY),
         future: [],
@@ -259,6 +240,33 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
         }
         const idx = draft.tables.findIndex((t) => t.id === id);
         if (idx !== -1) draft.tables.splice(idx, 1);
+      });
+    },
+
+    /**
+     * Bulk-delete multiple tables in a single undo entry.
+     * Also removes any relations connected to the deleted tables.
+     */
+    removeTables: (ids) => {
+      if (ids.length === 0) return;
+      if (ids.length === 1) {
+        // Delegate to single-table remove for consistency
+        get().removeTable(ids[0]);
+        return;
+      }
+      withUndo((draft) => {
+        const idSet = new Set(ids);
+        for (let i = draft.relations.length - 1; i >= 0; i--) {
+          const r = draft.relations[i];
+          if (idSet.has(r.sourceTableId) || idSet.has(r.targetTableId)) {
+            draft.relations.splice(i, 1);
+          }
+        }
+        for (let i = draft.tables.length - 1; i >= 0; i--) {
+          if (idSet.has(draft.tables[i].id)) {
+            draft.tables.splice(i, 1);
+          }
+        }
       });
     },
 
@@ -316,6 +324,23 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
             draft.relations.splice(i, 1);
           }
         }
+      });
+    },
+
+    reorderColumns: (tableId, fromIndex, toIndex) => {
+      if (fromIndex === toIndex) return;
+      withUndo((draft) => {
+        const table = draft.tables.find((t) => t.id === tableId);
+        if (!table) return;
+        if (
+          fromIndex < 0 ||
+          fromIndex >= table.columns.length ||
+          toIndex < 0 ||
+          toIndex >= table.columns.length
+        )
+          return;
+        const [moved] = table.columns.splice(fromIndex, 1);
+        table.columns.splice(toIndex, 0, moved);
       });
     },
 
