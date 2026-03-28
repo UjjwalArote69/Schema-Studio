@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useCallback } from "react";
 import {
-  Database, Plus, LayoutTemplate, FileCode, Sparkles, Send, Loader2, Lock,
+  Database, Plus, LayoutTemplate, FileCode, Sparkles, Send, Loader2, Lock, Zap, X,
 } from "lucide-react";
 import { useSchemaStore } from "@/store/useSchemaStore";
 import { generateSchemaFromAI } from "@/app/actions/ai-actions";
@@ -16,18 +17,13 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ onImportSQL }: EmptyStateProps) {
-  // ── PERF FIX ────────────────────────────────────────────────
-  // Only subscribe to action refs (stable, never trigger re-renders).
-  // `tables` and `relations` are only needed inside handleGenerate
-  // at call-time, so we read them via getState() instead.
-  // ────────────────────────────────────────────────────────────
   const addTable = useSchemaStore((s) => s.addTable);
   const setSchema = useSchemaStore((s) => s.setSchema);
 
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Auth hooks
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -41,6 +37,7 @@ export function EmptyState({ onImportSQL }: EmptyStateProps) {
   const handleGenerate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      setError(null);
       if (!session) {
         router.push("/login?callbackUrl=/editor");
         return;
@@ -49,12 +46,11 @@ export function EmptyState({ onImportSQL }: EmptyStateProps) {
 
       setIsGenerating(true);
       try {
-        // Read current schema at call-time
         const { tables, relations } = useSchemaStore.getState();
         const result = await generateSchemaFromAI(prompt, { tables, relations });
         setSchema(result.tables, result.relations);
-      } catch {
-        alert("AI failed to generate schema. Please try again.");
+      } catch (err: any) {
+        setError(err?.message || "AI failed to generate schema. Please try again.");
       } finally {
         setIsGenerating(false);
       }
@@ -81,6 +77,17 @@ export function EmptyState({ onImportSQL }: EmptyStateProps) {
           Describe your application and our AI will instantly generate a
           complete relational database schema for you.
         </p>
+
+        {/* Error banner */}
+        {error && (
+          <div className="w-full mb-4 flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl animate-in fade-in slide-in-from-top-2">
+            <Zap className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</p>
+            <button onClick={() => setError(null)} className="p-0.5 text-red-400 hover:text-red-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* AI Input Form */}
         <form

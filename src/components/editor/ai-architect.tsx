@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useCallback } from "react";
-import { Sparkles, Loader2, Send, Lock, X } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Sparkles, Loader2, Send, Lock, X, Zap } from "lucide-react";
 import { generateSchemaFromAI } from "@/app/actions/ai-actions";
+import { fetchUsageSummary } from "@/app/actions/plan-actions";
 import { useSchemaStore } from "@/store/useSchemaStore";
 import { AILoadingSkeleton } from "./ai-skeleton-loading";
 import { useSession } from "next-auth/react";
@@ -12,27 +14,32 @@ export function AIArchitect() {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // ── PERF FIX ────────────────────────────────────────────────
-  // Before: `const { tables, relations, setSchema } = useSchemaStore();`
-  //   → Subscribes to tables & relations as REACTIVE state
-  //   → Re-renders this component on every tables/relations change
-  //   → During drag: ~60 re-renders/sec for a component that never
-  //     renders tables or relations in its JSX
-  //
-  // After: Only subscribe to the `setSchema` action (stable ref).
-  //   → tables & relations read via getState() inside the handler
-  //   → Zero re-renders from drag / column edits / relation changes
-  // ────────────────────────────────────────────────────────────
+  // AI usage tracking
+  const [aiUsed, setAiUsed] = useState<number | null>(null);
+  const [aiLimit, setAiLimit] = useState<number | null>(null);
+
   const setSchema = useSchemaStore((s) => s.setSchema);
 
-  // Auth hooks
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  // Fetch AI usage on mount for free-tier users
+  useEffect(() => {
+    if (!session) return;
+    fetchUsageSummary().then((usage) => {
+      if (usage && usage.plan === "free") {
+        setAiUsed(usage.aiGenerations.current);
+        setAiLimit(usage.aiGenerations.limit);
+      }
+    }).catch(() => {});
+  }, [session]);
 
   const handleGenerate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      setError(null);
       if (!session) {
         router.push("/login?callbackUrl=/editor");
         return;
@@ -43,23 +50,45 @@ export function AIArchitect() {
       setIsMobileModalOpen(false);
 
       try {
-        // Read current schema at call-time — no reactive subscription needed
         const { tables, relations } = useSchemaStore.getState();
         const result = await generateSchemaFromAI(prompt, { tables, relations });
         setSchema(result.tables, result.relations);
         setPrompt("");
-      } catch (err) {
-        alert("AI failed to generate schema. Please try again.");
+        // Update usage counter locally
+        if (aiUsed !== null) setAiUsed((prev) => (prev !== null ? prev + 1 : prev));
+      } catch (err: any) {
+        const msg = err?.message || "AI failed to generate schema. Please try again.";
+        // Show plan-limit errors inline instead of alert
+        if (msg.includes("Free plan") || msg.includes("Upgrade to Pro")) {
+          setError(msg);
+        } else {
+          setError(msg);
+        }
       } finally {
         setIsGenerating(false);
       }
     },
-    [session, prompt, isGenerating, router, setSchema],
+    [session, prompt, isGenerating, router, setSchema, aiUsed],
   );
+
+  const aiRemaining = aiUsed !== null && aiLimit !== null ? Math.max(0, aiLimit - aiUsed) : null;
 
   return (
     <>
       {isGenerating && <AILoadingSkeleton />}
+
+      {/* Error toast */}
+      {error && (
+        <div className="hidden md:flex absolute bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="w-full flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl shadow-lg">
+            <Zap className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</p>
+            <button onClick={() => setError(null)} className="p-0.5 text-red-400 hover:text-red-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* =========================================
         DESKTOP UI: Full-width bottom bar
@@ -81,6 +110,22 @@ export function AIArchitect() {
             placeholder={!session ? "Sign in to use the AI Architect..." : "Ask AI to redesign or add to your schema..."}
             className="flex-1 bg-transparent border-none text-sm font-medium focus:ring-0 text-zinc-900 dark:text-white placeholder:text-zinc-500 outline-none px-2 disabled:opacity-60"
           />
+
+          {/* Remaining generations counter (free tier) */}
+          {session && aiRemaining !== null && (
+            <span
+              className={`text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full border shrink-0 ${
+                aiRemaining === 0
+                  ? "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+                  : aiRemaining <= 2
+                    ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700"
+              }`}
+              title={`${aiRemaining} AI generation${aiRemaining !== 1 ? "s" : ""} remaining today`}
+            >
+              {aiRemaining} left
+            </span>
+          )}
 
           <button
             type={session ? "submit" : "button"}
@@ -132,6 +177,11 @@ export function AIArchitect() {
                     <Sparkles className="w-4 h-4 text-zinc-900 dark:text-white" />
                   </div>
                   <span className="text-sm font-bold text-zinc-900 dark:text-white">AI Architect</span>
+                  {session && aiRemaining !== null && (
+                    <span className="text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700">
+                      {aiRemaining} left today
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -141,6 +191,13 @@ export function AIArchitect() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Mobile error */}
+              {error && (
+                <div className="mb-3 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl">
+                  <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+                </div>
+              )}
 
               <form onSubmit={handleGenerate} className="flex flex-col gap-3">
                 <textarea

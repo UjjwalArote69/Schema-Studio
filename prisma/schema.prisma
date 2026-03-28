@@ -4,14 +4,13 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "./generated/prisma"
+  provider        = "prisma-client"
+  output          = "./generated/prisma"
   previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
-  
 }
 
 // ==========================================
@@ -22,12 +21,12 @@ model Project {
   id        String   @id @default(cuid())
   name      String   @default("Untitled Schema")
   // We will save the entire Zustand state (tables/relations) as a JSON blob here
-  data      Json?    
+  data      Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   snapshots ProjectSnapshot[]
 }
@@ -64,15 +63,18 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?   // Added for your custom email/password login
-  accounts      Account[]
-  sessions      Session[]
-  projects      Project[] // Links the user to their schemas
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String?   @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String? // Added for your custom email/password login
+  plan                 String    @default("free")
+  aiGenerationsToday   Int       @default(0)
+  aiGenerationsResetAt DateTime  @default(now())
+  accounts             Account[]
+  sessions             Session[]
+  projects             Project[] // Links the user to their schemas
 }
 
 model VerificationToken {
@@ -91,8 +93,8 @@ model ProjectSnapshot {
   id        String   @id @default(cuid())
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  label     String   // "Auto-save", "Before AI generation", "Manual snapshot", etc.
-  data      Json     // Full { tables, relations } blob at that point in time
+  label     String // "Auto-save", "Before AI generation", "Manual snapshot", etc.
+  data      Json // Full { tables, relations } blob at that point in time
   createdAt DateTime @default(now())
 
   @@index([projectId, createdAt(sort: Desc)])

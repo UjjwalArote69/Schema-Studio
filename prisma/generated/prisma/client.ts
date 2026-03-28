@@ -29,7 +29,7 @@ export * from "./enums"
  * @example
  * ```
  * const prisma = new PrismaClient({
- *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL_UNPOOLED })
+ *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
  * // Fetch zero or more Projects
  * const projects = await prisma.project.findMany()
@@ -66,3 +66,8 @@ export type User = Prisma.UserModel
  * 
  */
 export type VerificationToken = Prisma.VerificationTokenModel
+/**
+ * Model ProjectSnapshot
+ * 
+ */
+export type ProjectSnapshot = Prisma.ProjectSnapshotModel

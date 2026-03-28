@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { assertCanCreateProject, assertCanAddTables } from "@/lib/plan-enforement";
 
 // ═══════════════════════════════════════════════════════════════
 // Validation schemas
@@ -78,6 +79,9 @@ async function requireUserId(): Promise<string> {
 export async function createSchema() {
   const userId = await requireUserId();
 
+  // ── Plan limit: project count ──────────────────────────────
+  await assertCanCreateProject(userId);
+
   const newProject = await prisma.project.create({
     data: {
       name: "Untitled Schema",
@@ -92,10 +96,16 @@ export async function createSchema() {
 export async function importSchemaAction(name: string, data: any) {
   const userId = await requireUserId();
 
+  // ── Plan limit: project count ──────────────────────────────
+  await assertCanCreateProject(userId);
+
   // Validate
   const safeName = schemaNameSchema.parse(name || "Imported Schema");
   const safeData = schemaDataSchema.parse(data);
   assertPayloadSize(safeData);
+
+  // ── Plan limit: table count in imported schema ─────────────
+  await assertCanAddTables(userId, { tables: [] }, safeData.tables.length);
 
   const project = await prisma.project.create({
     data: {
@@ -143,6 +153,12 @@ export async function updateSchema(projectId: string, name: string, data: any) {
     throw new Error("Unauthorized");
   }
 
+  // ── Plan limit: table count ────────────────────────────────
+  // Check whether the new state exceeds the per-project table cap.
+  // We pass tables: [] as the "current" base since safeData.tables
+  // already represents the full desired state (not a delta).
+  await assertCanAddTables(userId, { tables: [] }, safeData.tables.length);
+
   await prisma.project.update({
     where: { id: projectId },
     data: {
@@ -155,10 +171,16 @@ export async function updateSchema(projectId: string, name: string, data: any) {
 export async function createFromTemplate(templateName: string, templateData: any) {
   const userId = await requireUserId();
 
+  // ── Plan limit: project count ──────────────────────────────
+  await assertCanCreateProject(userId);
+
   // Validate
   const safeName = schemaNameSchema.parse(templateName);
   const safeData = schemaDataSchema.parse(templateData);
   assertPayloadSize(safeData);
+
+  // ── Plan limit: table count ────────────────────────────────
+  await assertCanAddTables(userId, { tables: [] }, safeData.tables.length);
 
   const project = await prisma.project.create({
     data: {
@@ -175,6 +197,9 @@ export async function createFromTemplate(templateName: string, templateData: any
  
 export async function createFromTemplateById(templateId: string) {
   const userId = await requireUserId();
+
+  // ── Plan limit: project count ──────────────────────────────
+  await assertCanCreateProject(userId);
  
   // Dynamic import — Template.ts is only loaded server-side, never bundled to the client
   const { TEMPLATES } = await import("@/data/Template");
@@ -187,6 +212,9 @@ export async function createFromTemplateById(templateId: string) {
   const safeName = schemaNameSchema.parse(template.name);
   const safeData = schemaDataSchema.parse(template.data);
   assertPayloadSize(safeData);
+
+  // ── Plan limit: table count ────────────────────────────────
+  await assertCanAddTables(userId, { tables: [] }, safeData.tables.length);
  
   const project = await prisma.project.create({
     data: {

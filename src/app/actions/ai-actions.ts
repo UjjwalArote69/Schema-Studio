@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { GoogleGenAI } from "@google/genai";
+import { assertCanUseAI, assertCanAddTables } from "@/lib/plan-enforement";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -115,6 +118,14 @@ export async function generateSchemaFromAI(
   prompt: string,
   currentSchema?: { tables: any[]; relations: any[] }
 ) {
+  // ── Auth check ─────────────────────────────────────────────
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("You must be signed in to use AI generation.");
+
+  // ── Plan limit: AI generations per day ─────────────────────
+  await assertCanUseAI(userId);
+
   const safePrompt = sanitizePrompt(prompt);
 
   if (!safePrompt) {
@@ -159,8 +170,22 @@ export async function generateSchemaFromAI(
     let text = response.text || "{}";
     text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
 
-    return JSON.parse(text);
-  } catch (error) {
+    const result = JSON.parse(text);
+
+    // ── Plan limit: table count in generated result ──────────
+    // Validate that the AI output doesn't exceed the user's
+    // per-project table limit before returning it to the client.
+    const generatedTableCount = Array.isArray(result.tables)
+      ? result.tables.length
+      : 0;
+    await assertCanAddTables(userId, { tables: [] }, generatedTableCount);
+
+    return result;
+  } catch (error: any) {
+    // Re-throw plan-limit errors with their original message
+    if (error?.message?.includes("Free plan") || error?.message?.includes("Upgrade to Pro")) {
+      throw error;
+    }
     console.error("AI Generation Error:", error);
     throw new Error("Failed to generate schema");
   }

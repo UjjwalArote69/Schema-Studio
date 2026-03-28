@@ -5,7 +5,9 @@ import { Plus } from "lucide-react";
 import { createSchema } from "@/app/actions/schema-actions";
 import { ImportButton } from "@/components/dashboard/import-button";
 import { ProjectGrid } from "@/components/dashboard/project-grid";
+import { UsageBanner } from "@/components/dashboard/usage-banner";
 import { getAllProjects, getUser } from "@/lib/dashboard-queries";
+import { getUsageSummary } from "@/lib/plan-enforement";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -13,10 +15,14 @@ export default async function DashboardPage() {
 
   if (!userId) redirect("/login");
 
-  const [projects, user] = await Promise.all([
+  const [projects, user, usage] = await Promise.all([
     getAllProjects(userId),
     getUser(userId),
+    getUsageSummary(userId),
   ]);
+
+  const canCreateProject =
+    usage.plan === "pro" || usage.projects.current < usage.projects.limit;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-12">
@@ -46,7 +52,13 @@ export default async function DashboardPage() {
           <form action={createSchema} className="w-full sm:w-auto">
             <button
               type="submit"
-              className="flex items-center justify-center w-full sm:w-auto gap-2 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 whitespace-nowrap"
+              disabled={!canCreateProject}
+              className="flex items-center justify-center w-full sm:w-auto gap-2 bg-black hover:bg-zinc-800 dark:bg-white dark:hover:bg-zinc-200 text-white dark:text-black px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+              title={
+                canCreateProject
+                  ? "Create a new schema"
+                  : `Free plan limit: ${usage.projects.limit} projects`
+              }
             >
               <Plus className="w-5 h-5" />
               New Schema
@@ -54,6 +66,19 @@ export default async function DashboardPage() {
           </form>
         </div>
       </div>
+
+      {/* Plan usage banner (free tier only) */}
+      <UsageBanner
+        usage={{
+          plan: usage.plan,
+          projects: usage.projects,
+          aiGenerations: {
+            current: usage.aiGenerations.current,
+            limit: usage.aiGenerations.limit,
+            resetsAt: usage.aiGenerations.resetsAt.toISOString(),
+          },
+        }}
+      />
 
       {/* Search + Project Grid (client component for instant filtering) */}
       <ProjectGrid projects={projects} />
