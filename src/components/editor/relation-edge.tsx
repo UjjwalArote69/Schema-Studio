@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 import { BaseEdge, EdgeLabelRenderer, EdgeProps, getSmoothStepPath, Position } from "@xyflow/react";
 import { useSchemaStore, type Relation } from "@/store/useSchemaStore";
 import { X } from "lucide-react";
@@ -77,7 +77,7 @@ const MARK_COLOR_SELECTED = "#ef4444";
 // store mutations (column edits, position updates, etc.).
 // ─────────────────────────────────────────────────────────────────
 
-export function RelationEdge({
+export const RelationEdge = memo(function RelationEdge({
   id,
   sourceX,
   sourceY,
@@ -179,4 +179,4 @@ export function RelationEdge({
       </EdgeLabelRenderer>
     </>
   );
-}
+})

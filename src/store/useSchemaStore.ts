@@ -62,6 +62,7 @@ interface SchemaState {
   setSchema: (tables: Table[], relations: Relation[]) => void;
   addTable: (position: { x: number; y: number }) => void;
   removeTable: (id: string) => void;
+  /** Bulk-delete multiple tables + their relations in one undo entry. */
   removeTables: (ids: string[]) => void;
   updateTableName: (id: string, name: string) => void;
   updateTablePosition: (
@@ -75,6 +76,7 @@ interface SchemaState {
     data: Partial<Column>,
   ) => void;
   removeColumn: (tableId: string, columnId: string) => void;
+  /** Move a column within a table from one index to another. */
   reorderColumns: (tableId: string, fromIndex: number, toIndex: number) => void;
   addRelation: (relation: Omit<Relation, "id">) => void;
   removeRelation: (id: string) => void;
@@ -243,25 +245,18 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
       });
     },
 
-    /**
-     * Bulk-delete multiple tables in a single undo entry.
-     * Also removes any relations connected to the deleted tables.
-     */
     removeTables: (ids) => {
       if (ids.length === 0) return;
-      if (ids.length === 1) {
-        // Delegate to single-table remove for consistency
-        get().removeTable(ids[0]);
-        return;
-      }
+      const idSet = new Set(ids);
       withUndo((draft) => {
-        const idSet = new Set(ids);
+        // Remove relations touching any deleted table
         for (let i = draft.relations.length - 1; i >= 0; i--) {
           const r = draft.relations[i];
           if (idSet.has(r.sourceTableId) || idSet.has(r.targetTableId)) {
             draft.relations.splice(i, 1);
           }
         }
+        // Remove the tables themselves
         for (let i = draft.tables.length - 1; i >= 0; i--) {
           if (idSet.has(draft.tables[i].id)) {
             draft.tables.splice(i, 1);
@@ -278,7 +273,7 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
     },
 
     updateTablePosition: (id, position) => {
-      // Silent — no undo entry.  Use beginDrag / commitDrag instead.
+      // Silent — no undo entry. Use beginDrag / commitDrag instead.
       set((state) => ({
         tables: state.tables.map((t) =>
           t.id === id ? { ...t, position } : t,
@@ -332,13 +327,6 @@ export const useSchemaStore = create<SchemaState>((set, get) => {
       withUndo((draft) => {
         const table = draft.tables.find((t) => t.id === tableId);
         if (!table) return;
-        if (
-          fromIndex < 0 ||
-          fromIndex >= table.columns.length ||
-          toIndex < 0 ||
-          toIndex >= table.columns.length
-        )
-          return;
         const [moved] = table.columns.splice(fromIndex, 1);
         table.columns.splice(toIndex, 0, moved);
       });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Database, Plus, LayoutTemplate, FileCode, Sparkles, Send, Loader2, Lock,
 } from "lucide-react";
@@ -16,7 +16,14 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ onImportSQL }: EmptyStateProps) {
-  const { addTable, setSchema, tables, relations } = useSchemaStore();
+  // ── PERF FIX ────────────────────────────────────────────────
+  // Only subscribe to action refs (stable, never trigger re-renders).
+  // `tables` and `relations` are only needed inside handleGenerate
+  // at call-time, so we read them via getState() instead.
+  // ────────────────────────────────────────────────────────────
+  const addTable = useSchemaStore((s) => s.addTable);
+  const setSchema = useSchemaStore((s) => s.setSchema);
+
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -24,31 +31,36 @@ export function EmptyState({ onImportSQL }: EmptyStateProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const handleCreateFirstTable = () => {
+  const handleCreateFirstTable = useCallback(() => {
     addTable({
       x: typeof window !== "undefined" ? window.innerWidth / 2 - 150 : 250,
       y: typeof window !== "undefined" ? window.innerHeight / 2 - 100 : 200,
     });
-  };
+  }, [addTable]);
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!session) {
-      router.push("/login?callbackUrl=/editor");
-      return;
-    }
-    if (!prompt.trim() || isGenerating) return;
+  const handleGenerate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!session) {
+        router.push("/login?callbackUrl=/editor");
+        return;
+      }
+      if (!prompt.trim() || isGenerating) return;
 
-    setIsGenerating(true);
-    try {
-      const result = await generateSchemaFromAI(prompt, { tables, relations });
-      setSchema(result.tables, result.relations);
-    } catch {
-      alert("AI failed to generate schema. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+      setIsGenerating(true);
+      try {
+        // Read current schema at call-time
+        const { tables, relations } = useSchemaStore.getState();
+        const result = await generateSchemaFromAI(prompt, { tables, relations });
+        setSchema(result.tables, result.relations);
+      } catch {
+        alert("AI failed to generate schema. Please try again.");
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [session, prompt, isGenerating, router, setSchema],
+  );
 
   return (
     <div className="absolute inset-0 flex items-center justify-center z-10 p-6 bg-zinc-50/50 dark:bg-zinc-950/50">
@@ -136,8 +148,7 @@ export function EmptyState({ onImportSQL }: EmptyStateProps) {
             href="/templates"
             className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-xl text-sm font-bold transition-all shadow-sm active:scale-95"
           >
-            <LayoutTemplate className="w-4 h-4 text-zinc-500" /> Browse
-            Templates
+            <LayoutTemplate className="w-4 h-4 text-zinc-500" /> Browse Templates
           </Link>
 
           <button

@@ -1,31 +1,220 @@
 /* eslint-disable react-hooks/refs */
 "use client";
 
-import { useState, useRef, useCallback, useMemo } from "react";
-import { useSchemaStore } from "@/store/useSchemaStore";
+import { useState, useRef, useCallback, useMemo, memo } from "react";
+import { useSchemaStore, type Table, type Relation } from "@/store/useSchemaStore";
+import { useShallow } from "zustand/react/shallow";
 import { X, Plus, Trash2, Key, Hash, Settings2, GripVertical, Cable, ChevronDown, ArrowRight } from "lucide-react";
 
 const DATA_TYPES = ["UUID", "VARCHAR", "TEXT", "INT", "FLOAT", "BOOLEAN", "DATE", "JSON"];
 
-export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | null }) {
-  // PERF: Individual selectors — only re-render when tables or
-  // relations change, not on every undo/redo/past/future update.
-  const tables = useSchemaStore((s) => s.tables);
-  const relations = useSchemaStore((s) => s.relations);
-  // Actions are stable references — never cause re-renders
-  const updateTableName = useSchemaStore((s) => s.updateTableName);
-  const addColumn = useSchemaStore((s) => s.addColumn);
+// ═══════════════════════════════════════════════════════════════
+// PERF: Memoized column row — prevents re-render of ALL rows
+// when only one column changes (e.g. renaming column 3 doesn't
+// re-render columns 1, 2, 4, 5).
+// ═══════════════════════════════════════════════════════════════
+const ColumnRow = memo(function ColumnRow({
+  col,
+  index,
+  tableId,
+  dropIndicator,
+  dragSourceIdx,
+  onGripPointerDown,
+  onRowDragStart,
+  onRowDragEnd,
+  onRowDragOver,
+  onRowDragLeave,
+  onRowDrop,
+}: {
+  col: Table["columns"][number];
+  index: number;
+  tableId: string;
+  dropIndicator: { index: number; edge: "top" | "bottom" } | null;
+  dragSourceIdx: React.MutableRefObject<number | null>;
+  onGripPointerDown: () => void;
+  onRowDragStart: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onRowDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
+  onRowDragOver: (e: React.DragEvent<HTMLDivElement>, index: number) => void;
+  onRowDragLeave: (e: React.DragEvent<HTMLDivElement>) => void;
+  onRowDrop: (e: React.DragEvent<HTMLDivElement>, targetIndex: number, tableId: string) => void;
+}) {
+  // PERF: Individual action selectors — stable refs, no re-renders
   const updateColumn = useSchemaStore((s) => s.updateColumn);
   const removeColumn = useSchemaStore((s) => s.removeColumn);
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => onRowDragStart(e, index)}
+      onDragEnd={onRowDragEnd}
+      onDragOver={(e) => onRowDragOver(e, index)}
+      onDragLeave={onRowDragLeave}
+      onDrop={(e) => onRowDrop(e, index, tableId)}
+      className="relative group flex flex-col gap-2.5 p-3 md:p-4 border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors last:border-0"
+    >
+      {/* Drop indicator — top */}
+      {dropIndicator &&
+        dropIndicator.index === index &&
+        dropIndicator.edge === "top" &&
+        dragSourceIdx.current !== null &&
+        dragSourceIdx.current !== index &&
+        dragSourceIdx.current !== index - 1 && (
+        <div className="absolute top-0 left-3 right-3 z-10 flex items-center pointer-events-none">
+          <div className="w-2 h-2 rounded-full bg-blue-500 -ml-1 shrink-0" />
+          <div className="flex-1 h-0.5 bg-blue-500 rounded-full" />
+          <div className="w-2 h-2 rounded-full bg-blue-500 -mr-1 shrink-0" />
+        </div>
+      )}
+
+      {/* Top Row: Grip + Name Input + Delete */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {/* Drag grip handle */}
+          <div
+            onPointerDown={onGripPointerDown}
+            className="cursor-grab active:cursor-grabbing p-0.5 text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
+            title="Drag to reorder"
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </div>
+
+          <input
+            value={col.name}
+            onChange={(e) => updateColumn(tableId, col.id, { name: e.target.value })}
+            className="flex-1 min-w-0 text-sm font-semibold text-zinc-800 dark:text-zinc-200 bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 border border-transparent focus:border-blue-500 rounded px-1.5 py-0.5 outline-none transition-all"
+            placeholder="column_name"
+          />
+        </div>
+        <button
+          onClick={() => removeColumn(tableId, col.id)}
+          className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-all md:opacity-0 md:group-hover:opacity-100 shrink-0"
+          title="Remove Column"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Bottom Row: Type Selector & Constraints */}
+      <div className="flex flex-wrap items-center gap-2 pl-6">
+        <select
+          value={col.type}
+          onChange={(e) => updateColumn(tableId, col.id, { type: e.target.value })}
+          className="flex-1 min-w-[100px] text-xs font-mono bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+        >
+          {DATA_TYPES.map((type) => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </select>
+
+        {/* Segmented Toggles */}
+        <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-0.5">
+          <button
+            onClick={() => updateColumn(tableId, col.id, { isPrimary: !col.isPrimary })}
+            className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase transition-all ${
+              col.isPrimary
+                ? "bg-white dark:bg-zinc-800 text-amber-500 shadow-sm border border-zinc-200 dark:border-zinc-700"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            }`}
+            title="Toggle Primary Key"
+          >
+            <Key className="w-3 h-3" /> <span className="hidden sm:inline">PK</span>
+          </button>
+          <button
+            onClick={() => updateColumn(tableId, col.id, { isUnique: !col.isUnique })}
+            className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase transition-all ${
+              col.isUnique
+                ? "bg-white dark:bg-zinc-800 text-blue-500 shadow-sm border border-zinc-200 dark:border-zinc-700"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            }`}
+            title="Toggle Unique Constraint"
+          >
+            <Hash className="w-3 h-3" /> <span className="hidden sm:inline">UQ</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Drop indicator — bottom */}
+      {dropIndicator &&
+        dropIndicator.index === index &&
+        dropIndicator.edge === "bottom" &&
+        dragSourceIdx.current !== null &&
+        dragSourceIdx.current !== index &&
+        dragSourceIdx.current !== index + 1 && (
+        <div className="absolute bottom-0 left-3 right-3 z-10 flex items-center pointer-events-none">
+          <div className="w-2 h-2 rounded-full bg-blue-500 -ml-1 shrink-0" />
+          <div className="flex-1 h-0.5 bg-blue-500 rounded-full" />
+          <div className="w-2 h-2 rounded-full bg-blue-500 -mr-1 shrink-0" />
+        </div>
+      )}
+    </div>
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Main sidebar component
+// ═══════════════════════════════════════════════════════════════
+
+export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | null }) {
+  // ─────────────────────────────────────────────────────────────
+  // PERF FIX #1: Use a targeted selector that returns ONLY the
+  // selected table object. Thanks to Immer's structural sharing,
+  // the same Table reference is reused when other tables change
+  // (e.g. during drag of a different table). This means the
+  // sidebar does NOT re-render when you drag unrelated tables.
+  //
+  // Before: `const tables = useSchemaStore(s => s.tables);`
+  //   → re-renders on EVERY tables change (including drags)
+  //
+  // After: `const table = useSchemaStore(s => s.tables.find(...))`
+  //   → only re-renders when the selected table's data changes
+  // ─────────────────────────────────────────────────────────────
+  const table = useSchemaStore(
+    useCallback(
+      (s: { tables: Table[] }) =>
+        selectedNodeId ? s.tables.find((t) => t.id === selectedNodeId) ?? null : null,
+      [selectedNodeId],
+    ),
+  );
+
+  // PERF FIX #2: Only subscribe to relations involving this table.
+  // .filter() returns a new array every call, which would cause an
+  // infinite loop with Zustand's default Object.is equality check.
+  // useShallow does a shallow comparison of array elements instead,
+  // so it only triggers a re-render when the actual relation objects change.
+  const tableRelationsRaw = useSchemaStore(
+    useShallow((s) => {
+      if (!selectedNodeId) return EMPTY_RELATIONS;
+      return s.relations.filter(
+        (r) => r.sourceTableId === selectedNodeId || r.targetTableId === selectedNodeId,
+      );
+    }),
+  );
+
+  // Resolve table names for display.
+  // Uses getState() instead of a reactive subscription to avoid
+  // re-rendering the sidebar when unrelated tables are dragged.
+  const tableRelations = useMemo(() => {
+    if (!selectedNodeId) return EMPTY_ENRICHED;
+    const { tables: allTables } = useSchemaStore.getState();
+    return tableRelationsRaw.map((r) => {
+      const otherTableId =
+        r.sourceTableId === selectedNodeId ? r.targetTableId : r.sourceTableId;
+      const otherTable = allTables.find((t) => t.id === otherTableId);
+      const direction: "outgoing" | "incoming" =
+        r.sourceTableId === selectedNodeId ? "outgoing" : "incoming";
+      return { ...r, otherTableName: otherTable?.name ?? "unknown", direction };
+    });
+  }, [selectedNodeId, tableRelationsRaw]);
+
+  // Actions — stable refs
+  const updateTableName = useSchemaStore((s) => s.updateTableName);
+  const addColumn = useSchemaStore((s) => s.addColumn);
   const removeTable = useSchemaStore((s) => s.removeTable);
   const reorderColumns = useSchemaStore((s) => s.reorderColumns);
   const removeRelation = useSchemaStore((s) => s.removeRelation);
   const updateRelation = useSchemaStore((s) => s.updateRelation);
 
   // ── Drag state ──────────────────────────────────────────────
-  // sourceIndex lives in a ref so mid-drag events don't cause
-  // re-renders.  dropIndicator is state because it drives the
-  // visual indicator line that React needs to paint.
   const dragSourceIdx = useRef<number | null>(null);
   const gripActivated = useRef(false);
   const [dropIndicator, setDropIndicator] = useState<{
@@ -33,13 +222,7 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
     edge: "top" | "bottom";
   } | null>(null);
 
-  // ── Handlers ────────────────────────────────────────────────
-
-  /**
-   * Grip handle pointer-down sets a flag so onDragStart knows the
-   * drag was initiated from the handle, not from an input or button.
-   * pointerdown always fires before dragstart on the same element.
-   */
+  // ── Drag handlers ───────────────────────────────────────────
   const onGripPointerDown = useCallback(() => {
     gripActivated.current = true;
   }, []);
@@ -47,43 +230,29 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
   const onRowDragStart = useCallback(
     (e: React.DragEvent<HTMLDivElement>, index: number) => {
       if (!gripActivated.current) {
-        // Drag didn't originate from the grip handle — cancel it
-        // so inputs / buttons / selects keep working normally.
         e.preventDefault();
         return;
       }
       gripActivated.current = false;
-
       dragSourceIdx.current = index;
       e.dataTransfer.effectAllowed = "move";
-      // Minimal transfer data (Firefox requires setData to be called)
       e.dataTransfer.setData("text/plain", String(index));
-
-      // Slightly transparent ghost
-      if (e.currentTarget) {
-        e.currentTarget.style.opacity = "0.4";
-      }
+      if (e.currentTarget) e.currentTarget.style.opacity = "0.4";
     },
     [],
   );
 
-  const onRowDragEnd = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.currentTarget.style.opacity = "";
-      dragSourceIdx.current = null;
-      setDropIndicator(null);
-      gripActivated.current = false;
-    },
-    [],
-  );
+  const onRowDragEnd = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.style.opacity = "";
+    dragSourceIdx.current = null;
+    setDropIndicator(null);
+    gripActivated.current = false;
+  }, []);
 
   const onRowDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>, index: number) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
-
-      // Determine whether the cursor is in the top or bottom half
-      // of the row — this decides where the blue indicator line sits.
       const rect = e.currentTarget.getBoundingClientRect();
       const midY = rect.top + rect.height / 2;
       const edge: "top" | "bottom" = e.clientY < midY ? "top" : "bottom";
@@ -96,15 +265,11 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
     [],
   );
 
-  const onRowDragLeave = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      // Only clear if we're leaving the row entirely (not entering a child)
-      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-        setDropIndicator(null);
-      }
-    },
-    [],
-  );
+  const onRowDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropIndicator(null);
+    }
+  }, []);
 
   const onRowDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>, targetIndex: number, tableId: string) => {
@@ -112,12 +277,9 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
       const fromIndex = dragSourceIdx.current;
       if (fromIndex === null) return;
 
-      // Compute the effective insertion index
       const rect = e.currentTarget.getBoundingClientRect();
       const midY = rect.top + rect.height / 2;
       let toIndex = e.clientY < midY ? targetIndex : targetIndex + 1;
-
-      // Adjust for the removal of the source element
       if (fromIndex < toIndex) toIndex -= 1;
 
       reorderColumns(tableId, fromIndex, toIndex);
@@ -130,38 +292,8 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
   // ── Relations section state ─────────────────────────────────
   const [showRelations, setShowRelations] = useState(true);
 
-  // Compute relations involving the selected table, with resolved
-  // names for display. Runs before render guards so hooks order is stable.
-  const tableRelations = useMemo(() => {
-    if (!selectedNodeId) return [];
-    return relations
-      .filter(
-        (r) =>
-          r.sourceTableId === selectedNodeId ||
-          r.targetTableId === selectedNodeId,
-      )
-      .map((r) => {
-        const otherTableId =
-          r.sourceTableId === selectedNodeId
-            ? r.targetTableId
-            : r.sourceTableId;
-        const otherTable = tables.find((t) => t.id === otherTableId);
-        const direction: "outgoing" | "incoming" =
-          r.sourceTableId === selectedNodeId ? "outgoing" : "incoming";
-        return {
-          ...r,
-          otherTableName: otherTable?.name ?? "unknown",
-          direction,
-        };
-      });
-  }, [selectedNodeId, relations, tables]);
-
   // ── Render guards ───────────────────────────────────────────
-
-  if (!selectedNodeId) return null;
-
-  const table = tables.find((t) => t.id === selectedNodeId);
-  if (!table) return null;
+  if (!selectedNodeId || !table) return null;
 
   return (
     <div className="absolute z-50 flex flex-col bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl overflow-hidden transition-all duration-300
@@ -197,9 +329,8 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
         />
       </div>
 
-      {/* ── Columns List (Drag-Reorderable) ─────────────────── */}
+      {/* ── Columns ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-300 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full pb-2">
-
         {table.columns.length === 0 && (
           <div className="p-6 text-center text-sm text-zinc-500">
             No columns yet. Add one below.
@@ -207,161 +338,40 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
         )}
 
         {table.columns.map((col, index) => (
-          <div key={col.id} className="relative">
-
-            {/* Drop indicator — blue line above this row */}
-            {dropIndicator &&
-              dropIndicator.index === index &&
-              dropIndicator.edge === "top" &&
-              dragSourceIdx.current !== null &&
-              dragSourceIdx.current !== index && (
-              <div className="absolute top-0 left-3 right-3 z-10 flex items-center pointer-events-none">
-                <div className="w-2 h-2 rounded-full bg-blue-500 -ml-1 shrink-0" />
-                <div className="flex-1 h-0.5 bg-blue-500 rounded-full" />
-                <div className="w-2 h-2 rounded-full bg-blue-500 -mr-1 shrink-0" />
-              </div>
-            )}
-
-            {/* Column row */}
-            <div
-              draggable
-              onDragStart={(e) => onRowDragStart(e, index)}
-              onDragEnd={onRowDragEnd}
-              onDragOver={(e) => onRowDragOver(e, index)}
-              onDragLeave={onRowDragLeave}
-              onDrop={(e) => onRowDrop(e, index, table.id)}
-              className={`group flex flex-col gap-2.5 p-3 md:p-4 border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors last:border-0 ${
-                dragSourceIdx.current === index ? "opacity-40" : ""
-              }`}
-            >
-              {/* Top Row: Grip + Name + Delete */}
-              <div className="flex items-center gap-1.5">
-                {/* Drag grip handle */}
-                <button
-                  type="button"
-                  onPointerDown={onGripPointerDown}
-                  className="p-0.5 cursor-grab active:cursor-grabbing text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 dark:hover:text-zinc-400 transition-colors touch-none shrink-0 md:opacity-0 md:group-hover:opacity-100"
-                  tabIndex={-1}
-                  aria-label={`Reorder ${col.name}`}
-                >
-                  <GripVertical className="w-4 h-4" />
-                </button>
-
-                <input
-                  value={col.name}
-                  onChange={(e) =>
-                    updateColumn(table.id, col.id, { name: e.target.value })
-                  }
-                  className="flex-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200 bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 border border-transparent focus:border-blue-500 rounded px-1.5 py-0.5 outline-none transition-all min-w-0"
-                  placeholder="column_name"
-                />
-
-                <button
-                  onClick={() => removeColumn(table.id, col.id)}
-                  className="p-1 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-all md:opacity-0 md:group-hover:opacity-100 shrink-0"
-                  title="Remove Column"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Bottom Row: Type Selector & Constraints */}
-              <div className="flex flex-wrap items-center gap-2 pl-6">
-                <select
-                  value={col.type}
-                  onChange={(e) =>
-                    updateColumn(table.id, col.id, { type: e.target.value })
-                  }
-                  className="flex-1 min-w-[100px] text-xs font-mono bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                >
-                  {DATA_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Segmented Toggles */}
-                <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-0.5">
-                  <button
-                    onClick={() =>
-                      updateColumn(table.id, col.id, {
-                        isPrimary: !col.isPrimary,
-                      })
-                    }
-                    className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase transition-all ${
-                      col.isPrimary
-                        ? "bg-white dark:bg-zinc-800 text-amber-500 shadow-sm border border-zinc-200 dark:border-zinc-700"
-                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                    }`}
-                    title="Toggle Primary Key"
-                  >
-                    <Key className="w-3 h-3" />{" "}
-                    <span className="hidden sm:inline">PK</span>
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      updateColumn(table.id, col.id, {
-                        isUnique: !col.isUnique,
-                      })
-                    }
-                    className={`flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-bold uppercase transition-all ${
-                      col.isUnique
-                        ? "bg-white dark:bg-zinc-800 text-blue-500 shadow-sm border border-zinc-200 dark:border-zinc-700"
-                        : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                    }`}
-                    title="Toggle Unique Constraint"
-                  >
-                    <Hash className="w-3 h-3" />{" "}
-                    <span className="hidden sm:inline">UQ</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Drop indicator — blue line below this row (last item only) */}
-            {dropIndicator &&
-              dropIndicator.index === index &&
-              dropIndicator.edge === "bottom" &&
-              dragSourceIdx.current !== null &&
-              dragSourceIdx.current !== index &&
-              dragSourceIdx.current !== index + 1 && (
-              <div className="absolute bottom-0 left-3 right-3 z-10 flex items-center pointer-events-none">
-                <div className="w-2 h-2 rounded-full bg-blue-500 -ml-1 shrink-0" />
-                <div className="flex-1 h-0.5 bg-blue-500 rounded-full" />
-                <div className="w-2 h-2 rounded-full bg-blue-500 -mr-1 shrink-0" />
-              </div>
-            )}
-          </div>
+          <ColumnRow
+            key={col.id}
+            col={col}
+            index={index}
+            tableId={table.id}
+            dropIndicator={dropIndicator}
+            dragSourceIdx={dragSourceIdx}
+            onGripPointerDown={onGripPointerDown}
+            onRowDragStart={onRowDragStart}
+            onRowDragEnd={onRowDragEnd}
+            onRowDragOver={onRowDragOver}
+            onRowDragLeave={onRowDragLeave}
+            onRowDrop={onRowDrop}
+          />
         ))}
       </div>
 
       {/* ── Relationships Section ───────────────────────────── */}
       {tableRelations.length > 0 && (
         <div className="border-t border-zinc-200/80 dark:border-zinc-800/80 shrink-0">
-          {/* Section header — collapsible */}
           <button
             onClick={() => setShowRelations((v) => !v)}
             className="w-full flex items-center justify-between px-3 md:px-4 py-2.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors"
           >
             <div className="flex items-center gap-2">
               <Cable className="w-3.5 h-3.5" />
-              <span className="text-xs font-semibold uppercase tracking-wider">
-                Relationships
-              </span>
+              <span className="text-xs font-semibold uppercase tracking-wider">Relationships</span>
               <span className="text-[10px] font-bold tabular-nums bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 px-1.5 py-0.5 rounded-md">
                 {tableRelations.length}
               </span>
             </div>
-            <ChevronDown
-              className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                showRelations ? "" : "-rotate-90"
-              }`}
-            />
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showRelations ? "" : "-rotate-90"}`} />
           </button>
 
-          {/* Relation rows */}
           {showRelations && (
             <div className="max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-zinc-300 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full">
               {tableRelations.map((rel) => {
@@ -377,15 +387,9 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
                     key={rel.id}
                     className="group flex items-center gap-2 px-3 md:px-4 py-2 border-t border-zinc-100 dark:border-zinc-800/30 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/30 transition-colors"
                   >
-                    {/* Type badge */}
                     <button
                       onClick={() => {
-                        const next =
-                          rel.type === "1:n"
-                            ? "m:n"
-                            : rel.type === "m:n"
-                              ? "1:1"
-                              : "1:n";
+                        const next = rel.type === "1:n" ? "m:n" : rel.type === "m:n" ? "1:1" : "1:n";
                         updateRelation(rel.id, next);
                       }}
                       className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all hover:brightness-95 active:scale-95 ${typeColor}`}
@@ -393,20 +397,14 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
                     >
                       {rel.type}
                     </button>
-
-                    {/* Direction arrow + other table */}
                     <div className="flex items-center gap-1 min-w-0 flex-1 text-xs">
                       <ArrowRight
-                        className={`w-3 h-3 shrink-0 text-zinc-400 ${
-                          rel.direction === "incoming" ? "rotate-180" : ""
-                        }`}
+                        className={`w-3 h-3 shrink-0 text-zinc-400 ${rel.direction === "incoming" ? "rotate-180" : ""}`}
                       />
                       <span className="font-semibold text-zinc-700 dark:text-zinc-300 truncate">
                         {rel.otherTableName}
                       </span>
                     </div>
-
-                    {/* Delete */}
                     <button
                       onClick={() => removeRelation(rel.id)}
                       className="p-0.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 rounded transition-all md:opacity-0 md:group-hover:opacity-100 shrink-0"
@@ -434,3 +432,7 @@ export function FloatingSidebar({ selectedNodeId }: { selectedNodeId: string | n
     </div>
   );
 }
+
+// Stable empty arrays to avoid new object creation on every render
+const EMPTY_RELATIONS: Relation[] = [];
+const EMPTY_ENRICHED: (Relation & { otherTableName: string; direction: "outgoing" | "incoming" })[] = [];

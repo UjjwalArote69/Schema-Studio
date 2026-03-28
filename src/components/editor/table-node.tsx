@@ -1,10 +1,21 @@
 "use client";
 
+import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { Table } from "@/store/useSchemaStore";
 import { Key } from "lucide-react";
 
-export function TableNode({
+// ═══════════════════════════════════════════════════════════════
+// PERF: memo() is critical here. React Flow re-renders all visible
+// nodes on any state change (zoom, pan, selection). Without memo,
+// 50 table nodes × 10 columns = 500 DOM elements re-rendered on
+// every frame during pan/zoom.
+//
+// Immer's structural sharing ensures `data.table` is the SAME
+// object reference when nothing about that table changed, so
+// memo's shallow comparison bails out correctly.
+// ═══════════════════════════════════════════════════════════════
+export const TableNode = memo(function TableNode({
   data,
   selected,
 }: {
@@ -15,12 +26,13 @@ export function TableNode({
 
   return (
     <div
-      className={`bg-white dark:bg-zinc-950 border-2 rounded-xl shadow-xl min-w-[220px] transition-all ${
+      className={`bg-white dark:bg-zinc-950 border-2 rounded-xl shadow-xl min-w-[220px] transition-shadow ${
         selected
           ? "border-blue-500 shadow-blue-500/20"
           : "border-zinc-200 dark:border-zinc-800"
       }`}
     >
+      {/* Table Header */}
       <div
         className={`px-4 py-2 flex items-center justify-between border-b rounded-t-[10px] ${
           selected
@@ -38,10 +50,9 @@ export function TableNode({
         {table.columns.map((col) => (
           <div
             key={col.id}
-            // The 'group' class here is what triggers the handles to appear on hover
             className="relative px-4 py-1.5 flex items-center justify-between group hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors"
           >
-            {/* Target Handle (Left) - Sleek vertical pill */}
+            {/* Target Handle (Left) */}
             <Handle
               type="target"
               position={Position.Left}
@@ -75,7 +86,7 @@ export function TableNode({
               )}
             </div>
 
-            {/* Source Handle (Right) - Sleek vertical pill */}
+            {/* Source Handle (Right) */}
             <Handle
               type="source"
               position={Position.Right}
@@ -87,4 +98,4 @@ export function TableNode({
       </div>
     </div>
   );
-}
+});

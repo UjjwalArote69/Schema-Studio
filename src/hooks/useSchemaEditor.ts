@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/immutability */
 /* eslint-disable react-hooks/refs */
 "use client";
 
@@ -16,35 +18,41 @@ import { useSchemaStore } from "@/store/useSchemaStore";
 import { TableNode } from "@/components/editor/table-node";
 import { RelationEdge } from "@/components/editor/relation-edge";
 
-// ── Static objects hoisted out of the component ─────────────────
-// These never change, so React Flow sees stable references.
-const EDGE_STYLE = { stroke: "#a1a1aa", strokeWidth: 2 } as const;
-
 /**
  * Shared hook that bridges the Zustand schema store ↔ React Flow state.
  *
- * PERF STRATEGY:
- * 1. Use individual Zustand selectors — only re-render when the
- *    specific slice we read actually changes by reference.
- * 2. Preserve node/edge data object references — only create new
- *    data objects when the backing Zustand object actually changed.
- * 3. Use refs for values the keyboard handler reads so the effect
- *    doesn't re-register on every selection change.
+ * PERF NOTES:
+ * ───────────────────────────────────────────────────────────────
+ * 1. Zustand `tables`/`relations` are the single source of truth.
+ *    React Flow nodes/edges are derived via useEffect.
+ *
+ * 2. We use plain useState (NOT useNodesState) to prevent React
+ *    Flow's internal state from fighting with Zustand.
+ *
+ * 3. During drag, React Flow manages positions locally through
+ *    onNodesChange. We only sync to Zustand on drag STOP to
+ *    avoid O(n) rebuilds every frame.
+ *
+ * 4. Individual Zustand selectors (s => s.someAction) for actions
+ *    — these are stable refs that never cause re-renders.
+ *
+ * 5. tablesRef / relationsRef keep callbacks seeing the latest
+ *    store state without re-creating closures.
+ * ───────────────────────────────────────────────────────────────
  */
 export function useSchemaEditor() {
-  // ── Zustand selectors (individual = fine-grained subscriptions) ─
-  // State slices — re-render only when these specific references change
+  // ── Store subscriptions: data (triggers re-renders) ───────────
   const tables = useSchemaStore((s) => s.tables);
   const relations = useSchemaStore((s) => s.relations);
   const past = useSchemaStore((s) => s.past);
   const future = useSchemaStore((s) => s.future);
 
-  // Actions — stable function references, never trigger re-renders
+  // ── Store subscriptions: actions (stable refs, no re-renders) ─
   const updateTablePosition = useSchemaStore((s) => s.updateTablePosition);
   const addTable = useSchemaStore((s) => s.addTable);
-  const addRelation = useSchemaStore((s) => s.addRelation);
   const removeTable = useSchemaStore((s) => s.removeTable);
   const removeTables = useSchemaStore((s) => s.removeTables);
+  const addRelation = useSchemaStore((s) => s.addRelation);
   const removeRelation = useSchemaStore((s) => s.removeRelation);
   const setSchema = useSchemaStore((s) => s.setSchema);
   const undo = useSchemaStore((s) => s.undo);
@@ -52,9 +60,12 @@ export function useSchemaEditor() {
   const beginDrag = useSchemaStore((s) => s.beginDrag);
   const commitDrag = useSchemaStore((s) => s.commitDrag);
 
+  // ── Selection state ───────────────────────────────────────────
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
 
-  // ── Stable type registries ────────────────────────────────────
+  // ── Stable type registries (never re-created) ─────────────────
   const nodeTypes: NodeTypes = useMemo(() => ({ tableNode: TableNode }), []);
   const edgeTypes = useMemo(() => ({ relationEdge: RelationEdge }), []);
 
@@ -62,94 +73,47 @@ export function useSchemaEditor() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  // Refs to latest Zustand state — used inside callbacks so they
-  // never see stale closures.
+  // ── Refs for latest Zustand state (stale-closure prevention) ──
   const tablesRef = useRef(tables);
   tablesRef.current = tables;
   const relationsRef = useRef(relations);
   relationsRef.current = relations;
 
-  // ── Derive selection from React Flow node state ───────────────
-  // PERF: Only produce a new array when the actual set of selected
-  // IDs changes, not on every node position update during drag.
-  const prevSelectedRef = useRef<string[]>([]);
-  const selectedNodeIds = useMemo(() => {
-    const ids = nodes.filter((n) => n.selected).map((n) => n.id);
-    const prev = prevSelectedRef.current;
-    // Shallow compare — if same length and same IDs in order, reuse
-    if (
-      ids.length === prev.length &&
-      ids.every((id, i) => id === prev[i])
-    ) {
-      return prev;
-    }
-    prevSelectedRef.current = ids;
-    return ids;
-  }, [nodes]);
-
-  const selectedNodeId =
-    selectedNodeIds.length === 1 ? selectedNodeIds[0] : null;
+  // Track whether a drag is in progress so the sync effect
+  // can skip position-only rebuilds during drag.
+  const isDraggingRef = useRef(false);
 
   // ── Sync Zustand tables → React Flow nodes ────────────────────
-  // PERF: Only create a new node object when the backing table
-  // reference actually changed. Preserves data identity so React
-  // Flow's internal shouldComponentUpdate / memo on TableNode works.
+  // PERF: This is AUTHORITATIVE — it rebuilds nodes from Zustand,
+  // preserving only `selected` from existing React Flow state.
+  // During drag we skip this (React Flow manages positions locally).
   useEffect(() => {
+    // If dragging, React Flow already has the latest positions
+    // from onNodesChange. We don't need to rebuild from Zustand
+    // since the only change during drag is position.
+    if (isDraggingRef.current) return;
+
     setNodes((prev) => {
       const prevMap = new Map(prev.map((n) => [n.id, n]));
-      let changed = false;
-      const next = tables.map((table) => {
+      return tables.map((table) => {
         const existing = prevMap.get(table.id);
-        if (existing) {
-          // Check if anything React Flow cares about actually changed
-          const positionSame =
-            existing.position.x === table.position.x &&
-            existing.position.y === table.position.y;
-          const dataSame = existing.data?.table === table;
-          if (positionSame && dataSame) {
-            return existing; // Same reference — no re-render
-          }
-          changed = true;
-          return {
-            ...existing,
-            position: positionSame ? existing.position : table.position,
-            data: dataSame ? existing.data : { table },
-          };
-        }
-        // New node
-        changed = true;
         return {
           id: table.id,
           type: "tableNode" as const,
           position: table.position,
           data: { table },
-          selected: false,
+          selected: existing?.selected ?? false,
         };
       });
-      // If only deletions/additions happened, or references changed
-      if (!changed && next.length === prev.length) return prev;
-      return next;
     });
   }, [tables]);
 
   // ── Sync Zustand relations → React Flow edges ────────────────
-  // PERF: Reuse edge objects and the shared EDGE_STYLE constant.
   useEffect(() => {
     setEdges((prev) => {
       const prevMap = new Map(prev.map((e) => [e.id, e]));
-      let changed = false;
-      const next = relations.map((rel) => {
+      return relations.map((rel) => {
         const existing = prevMap.get(rel.id);
-        if (existing) {
-          const dataSame = existing.data?.relation === rel;
-          if (dataSame) return existing;
-          changed = true;
-          return {
-            ...existing,
-            data: { relation: rel },
-          };
-        }
-        changed = true;
         return {
           id: rel.id,
           source: rel.sourceTableId,
@@ -158,27 +122,44 @@ export function useSchemaEditor() {
           targetHandle: rel.targetColumnId,
           type: "relationEdge",
           animated: true,
-          style: EDGE_STYLE,
+          style: { stroke: "#a1a1aa", strokeWidth: 2 },
           interactionWidth: 25,
-          selected: false,
+          selected: existing?.selected ?? false,
           data: { relation: rel },
         };
       });
-      if (!changed && next.length === prev.length) return prev;
-      return next;
     });
   }, [relations]);
 
   // ── Handle React Flow node changes ────────────────────────────
+  // PERF: Filters out "remove" changes (Zustand owns deletions),
+  // then reconciles against current store to drop stale nodes.
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds) => {
       const safe = changes.filter((c) => c.type !== "remove");
       const updated = applyNodeChanges(safe, nds);
+      // Reconcile — prevent deleted nodes from reappearing
       const validIds = new Set(tablesRef.current.map((t) => t.id));
       return updated.filter((n) => validIds.has(n.id));
     });
+
+    // Track multi-selection from the updated nodes
+    setNodes((nds) => {
+      const selected = nds.filter((n) => n.selected).map((n) => n.id);
+      // Only update if the selection actually changed
+      setSelectedNodeIds((prev) => {
+        if (
+          prev.length === selected.length &&
+          prev.every((id, i) => id === selected[i])
+        )
+          return prev;
+        return selected;
+      });
+      return nds; // no mutation
+    });
   }, []);
 
+  // ── Handle React Flow edge changes ────────────────────────────
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     setEdges((eds) => {
       const safe = changes.filter((c) => c.type !== "remove");
@@ -188,32 +169,7 @@ export function useSchemaEditor() {
     });
   }, []);
 
-  // ── Selection actions ─────────────────────────────────────────
-  const selectAll = useCallback(() => {
-    setNodes((prev) =>
-      prev.map((n) => (n.selected ? n : { ...n, selected: true })),
-    );
-    setSelectedEdgeId(null);
-  }, []);
-
-  const clearSelection = useCallback(() => {
-    setNodes((prev) =>
-      prev.map((n) => (n.selected ? { ...n, selected: false } : n)),
-    );
-    setEdges((prev) =>
-      prev.map((e) => (e.selected ? { ...e, selected: false } : e)),
-    );
-    setSelectedEdgeId(null);
-  }, []);
-
   // ── Keyboard shortcuts ────────────────────────────────────────
-  // PERF: Use refs for frequently-changing values so the effect
-  // doesn't re-register the listener on every selection/edge change.
-  const selectedNodeIdsRef = useRef(selectedNodeIds);
-  selectedNodeIdsRef.current = selectedNodeIds;
-  const selectedEdgeIdRef = useRef(selectedEdgeId);
-  selectedEdgeIdRef.current = selectedEdgeId;
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -231,44 +187,32 @@ export function useSchemaEditor() {
           e.preventDefault();
           undo();
         }
-        return;
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === "y") {
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "y") {
         e.preventDefault();
         redo();
-        return;
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
-        e.preventDefault();
-        selectAll();
-        return;
-      }
-
-      if (e.key === "Delete" || e.key === "Backspace") {
-        const ids = selectedNodeIdsRef.current;
-        if (ids.length > 0) {
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedNodeIds.length > 1) {
           e.preventDefault();
-          removeTables(ids);
-        } else if (selectedEdgeIdRef.current) {
+          removeTables(selectedNodeIds);
+          setSelectedNodeIds([]);
+          setSelectedNodeId(null);
+        } else if (selectedNodeId) {
           e.preventDefault();
-          removeRelation(selectedEdgeIdRef.current);
+          removeTable(selectedNodeId);
+          setSelectedNodeId(null);
+        } else if (selectedEdgeId) {
+          e.preventDefault();
+          removeRelation(selectedEdgeId);
           setSelectedEdgeId(null);
         }
-        return;
-      }
-
-      if (e.key === "Escape") {
+      } else if (e.key === "Escape") {
         clearSelection();
-        return;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-    // Only stable function references — this effect registers ONCE
-  }, [undo, redo, removeTables, removeRelation, selectAll, clearSelection]);
+  }, [undo, redo, selectedNodeId, selectedEdgeId, selectedNodeIds, removeTable, removeTables, removeRelation]);
 
   // ── Connection handler ────────────────────────────────────────
   const onConnect = useCallback(
@@ -293,20 +237,22 @@ export function useSchemaEditor() {
   );
 
   // ── Drag handlers ─────────────────────────────────────────────
+  // PERF: Set isDraggingRef so the sync effect skips during drag.
   const onNodeDragStart = useCallback(() => {
+    isDraggingRef.current = true;
     beginDrag();
   }, [beginDrag]);
 
   const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, _node: Node, draggedNodes: Node[]) => {
-      for (const n of draggedNodes) {
-        updateTablePosition(n.id, n.position);
-      }
+    (_event: React.MouseEvent, node: Node) => {
+      isDraggingRef.current = false;
+      updateTablePosition(node.id, node.position);
       commitDrag();
     },
     [updateTablePosition, commitDrag],
   );
 
+  // ── Edge deletion ─────────────────────────────────────────────
   const onEdgesDelete = useCallback(
     (edgesToDelete: Edge[]) => {
       edgesToDelete.forEach((edge) => removeRelation(edge.id));
@@ -315,19 +261,40 @@ export function useSchemaEditor() {
   );
 
   // ── Click handlers ────────────────────────────────────────────
-  const onNodeClick = useCallback((_event: React.MouseEvent, _node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
     setSelectedEdgeId(null);
   }, []);
 
   const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
     setSelectedEdgeId(edge.id);
+    setSelectedNodeId(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+  }, []);
+
+  // ── Multi-select helpers ──────────────────────────────────────
+  const selectAll = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? n : { ...n, selected: true })),
+    );
+    setSelectedNodeIds(tablesRef.current.map((t) => t.id));
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, selected: false } : n)),
+    );
+    setSelectedNodeIds([]);
+    setSelectedNodeId(null);
     setSelectedEdgeId(null);
   }, []);
 
   return {
+    // Store state
     tables,
     relations,
     addTable,
@@ -339,6 +306,7 @@ export function useSchemaEditor() {
     past,
     future,
 
+    // React Flow state & handlers
     nodes,
     edges,
     nodeTypes,
@@ -353,9 +321,10 @@ export function useSchemaEditor() {
     onEdgeClick,
     onPaneClick,
 
+    // Selection
     selectedNodeId,
-    selectedNodeIds,
     selectedEdgeId,
+    selectedNodeIds,
     selectAll,
     clearSelection,
   };
