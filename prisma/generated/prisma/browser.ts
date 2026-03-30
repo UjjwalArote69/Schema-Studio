@@ -42,3 +42,8 @@ export type User = Prisma.UserModel
  * 
  */
 export type VerificationToken = Prisma.VerificationTokenModel
+/**
+ * Model ProjectSnapshot
+ * 
+ */
+export type ProjectSnapshot = Prisma.ProjectSnapshotModel
