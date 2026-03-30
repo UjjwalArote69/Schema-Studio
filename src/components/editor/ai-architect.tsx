@@ -1,3 +1,10 @@
+// ============================================================
+// FILE: src/components/editor/ai-architect.tsx
+// (Replaces your existing ai-architect.tsx)
+//
+// Changes: Added analytics.aiGenerationStarted/Completed/Failed
+// ============================================================
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -9,6 +16,7 @@ import { useSchemaStore } from "@/store/useSchemaStore";
 import { AILoadingSkeleton } from "./ai-skeleton-loading";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { analytics } from "@/lib/analytics";
 
 export function AIArchitect() {
   const [prompt, setPrompt] = useState("");
@@ -16,7 +24,6 @@ export function AIArchitect() {
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // AI usage tracking
   const [aiUsed, setAiUsed] = useState<number | null>(null);
   const [aiLimit, setAiLimit] = useState<number | null>(null);
 
@@ -25,7 +32,6 @@ export function AIArchitect() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Fetch AI usage on mount for free-tier users
   useEffect(() => {
     if (!session) return;
     fetchUsageSummary().then((usage) => {
@@ -49,21 +55,29 @@ export function AIArchitect() {
       setIsGenerating(true);
       setIsMobileModalOpen(false);
 
+      const { tables, relations } = useSchemaStore.getState();
+
+      // ── Track: AI generation started ──
+      analytics.aiGenerationStarted(prompt.trim().length, tables.length > 0);
+
       try {
-        const { tables, relations } = useSchemaStore.getState();
         const result = await generateSchemaFromAI(prompt, { tables, relations });
         setSchema(result.tables, result.relations);
         setPrompt("");
-        // Update usage counter locally
+
+        // ── Track: AI generation completed ──
+        analytics.aiGenerationCompleted(
+          result.tables?.length || 0,
+          result.relations?.length || 0
+        );
+
         if (aiUsed !== null) setAiUsed((prev) => (prev !== null ? prev + 1 : prev));
       } catch (err: any) {
         const msg = err?.message || "AI failed to generate schema. Please try again.";
-        // Show plan-limit errors inline instead of alert
-        if (msg.includes("Free plan") || msg.includes("Upgrade to Pro")) {
-          setError(msg);
-        } else {
-          setError(msg);
-        }
+        setError(msg);
+
+        // ── Track: AI generation failed ──
+        analytics.aiGenerationFailed(msg);
       } finally {
         setIsGenerating(false);
       }
@@ -77,7 +91,6 @@ export function AIArchitect() {
     <>
       {isGenerating && <AILoadingSkeleton />}
 
-      {/* Error toast */}
       {error && (
         <div className="hidden md:flex absolute bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="w-full flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl shadow-lg">
@@ -90,10 +103,7 @@ export function AIArchitect() {
         </div>
       )}
 
-      {/* =========================================
-        DESKTOP UI: Full-width bottom bar
-        =========================================
-      */}
+      {/* DESKTOP UI */}
       <div className="hidden md:block absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-40 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <form
           onSubmit={handleGenerate}
@@ -111,7 +121,6 @@ export function AIArchitect() {
             className="flex-1 bg-transparent border-none text-sm font-medium focus:ring-0 text-zinc-900 dark:text-white placeholder:text-zinc-500 outline-none px-2 disabled:opacity-60"
           />
 
-          {/* Remaining generations counter (free tier) */}
           {session && aiRemaining !== null && (
             <span
               className={`text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full border shrink-0 ${
@@ -149,10 +158,7 @@ export function AIArchitect() {
         </form>
       </div>
 
-      {/* =========================================
-        MOBILE UI: Floating Action Button + Modal
-        =========================================
-      */}
+      {/* MOBILE UI */}
       <div className="md:hidden">
         {isMobileModalOpen && (
           <div
@@ -192,7 +198,6 @@ export function AIArchitect() {
                 </button>
               </div>
 
-              {/* Mobile error */}
               {error && (
                 <div className="mb-3 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl">
                   <p className="text-xs text-red-700 dark:text-red-300">{error}</p>

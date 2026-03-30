@@ -11,6 +11,8 @@ export default function LandingPage() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // console.log(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN);
+  
   return (
     <div className="min-h-screen bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 font-sans transition-colors duration-300 selection:bg-zinc-200 dark:selection:bg-zinc-800">
       

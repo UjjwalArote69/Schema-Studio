@@ -1,8 +1,16 @@
+// ============================================================
+// FILE: src/components/dashboard/delete-button.tsx
+// (Replaces your existing delete-button.tsx)
+//
+// Changes: Added analytics.schemaDeleted
+// ============================================================
+
 "use client";
 
 import { useTransition } from "react";
 import { Trash2, Loader2 } from "lucide-react";
 import { deleteSchema } from "@/app/actions/schema-actions";
+import { analytics } from "@/lib/analytics";
 
 export function DeleteButton({ projectId }: { projectId: string }) {
   const [isPending, startTransition] = useTransition();
@@ -11,6 +19,7 @@ export function DeleteButton({ projectId }: { projectId: string }) {
     if (isPending) return;
 
     if (confirm("Are you sure you want to delete this schema? This cannot be undone.")) {
+      analytics.schemaDeleted();
       startTransition(async () => {
         await deleteSchema(projectId);
       });

@@ -1,9 +1,17 @@
+// ============================================================
+// FILE: src/components/editor/export-modal.tsx
+// (Replaces your existing export-modal.tsx)
+//
+// Changes: Added analytics.exportOpened/Copied/Downloaded
+// ============================================================
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { X, Copy, Check, Database, Terminal, Download } from "lucide-react";
 import { generateCode, ExportFormat } from "@/utils/generate-code";
 import { Table, Relation } from "@/store/useSchemaStore";
+import { analytics } from "@/lib/analytics";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -17,7 +25,6 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
   const [downloaded, setDownloaded] = useState(false);
   const [format, setFormat] = useState<ExportFormat>("postgresql");
 
-  // Handle Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -25,6 +32,13 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
+
+  // ── Track: export modal opened ──
+  useEffect(() => {
+    if (isOpen && tables.length > 0) {
+      analytics.exportOpened();
+    }
+  }, [isOpen, tables.length]);
 
   const generatedCode = useMemo(() => {
     return generateCode(tables, relations, format);
@@ -38,6 +52,9 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
     navigator.clipboard.writeText(generatedCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+
+    // ── Track: code copied ──
+    analytics.exportCopied(format);
   };
 
   const tabs: { id: ExportFormat; label: string; ext: string }[] = [
@@ -51,29 +68,23 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
 
   const currentTab = tabs.find((t) => t.id === format);
 
-  // NEW: Download File Logic
   const handleDownload = () => {
-    // 1. Create a Blob with the code content
     const blob = new Blob([generatedCode], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    
-    // 2. Create a hidden <a> element and trigger the download
     const a = document.createElement("a");
     a.href = url;
     a.download = `schema.${currentTab?.ext || "txt"}`;
     document.body.appendChild(a);
     a.click();
-    
-    // 3. Cleanup
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
-    // 4. Show success state
     setDownloaded(true);
     setTimeout(() => setDownloaded(false), 2000);
+
+    // ── Track: file downloaded ──
+    analytics.exportDownloaded(format);
   };
 
-  // Handle clicking the dark background overlay
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -88,7 +99,6 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
         onClick={(e) => e.stopPropagation()}
       >
         
-        {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800/50 bg-white dark:bg-zinc-950">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-100 dark:border-blue-500/20">
@@ -107,7 +117,6 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
           </button>
         </div>
 
-        {/* Tab Selector (Pill Style) */}
         <div className="px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/20 border-b border-zinc-100 dark:border-zinc-800/50">
           <div className="flex items-center gap-1 p-1 bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200/50 dark:border-zinc-800 rounded-xl overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {tabs.map((tab) => (
@@ -126,10 +135,8 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
           </div>
         </div>
 
-        {/* Code Display Area */}
         <div className="p-6 bg-zinc-50/50 dark:bg-zinc-900/20">
           {isEmpty ? (
-            /* Empty state when no tables exist */
             <div className="flex flex-col items-center justify-center py-16 px-6 rounded-xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/30">
               <div className="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 mb-4">
                 <Database className="w-7 h-7 text-zinc-400" />
@@ -138,13 +145,11 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
                 No tables to export
               </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center max-w-xs">
-                Add at least one table to your schema before exporting. Use the canvas or the AI Architect to get started.
+                Add at least one table to your schema before exporting.
               </p>
             </div>
           ) : (
           <div className="rounded-xl overflow-hidden bg-[#0d1117] border border-zinc-200 dark:border-zinc-800 shadow-inner flex flex-col">
-            
-            {/* Editor Window Header */}
             <div className="flex items-center justify-between px-4 py-2.5 bg-white/5 border-b border-white/5">
               <div className="flex items-center gap-2 text-zinc-400">
                 <Terminal className="w-4 h-4" />
@@ -157,7 +162,6 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
               </div>
             </div>
 
-            {/* Code Block with custom scrollbar */}
             <pre className="p-5 text-[13px] text-zinc-300 font-mono whitespace-pre-wrap leading-relaxed overflow-y-auto max-h-[45vh] min-h-75 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full">
               <code>{generatedCode}</code>
             </pre>
@@ -165,15 +169,12 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
           )}
         </div>
 
-        {/* Modal Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100 dark:border-zinc-800/50 bg-white dark:bg-zinc-950">
           <p className="text-xs font-medium text-zinc-500 hidden sm:block">
             Automatically generated by SchemaStudio
           </p>
           
-          {/* Action Buttons */}
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-            {/* Download Button */}
             <button 
               onClick={handleDownload}
               disabled={isEmpty}
@@ -183,7 +184,6 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
               {downloaded ? "Downloaded" : "Download File"}
             </button>
 
-            {/* Copy Button */}
             <button 
               onClick={handleCopy}
               disabled={isEmpty}
@@ -194,7 +194,6 @@ export function ExportModal({ isOpen, onClose, tables, relations }: ExportModalP
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

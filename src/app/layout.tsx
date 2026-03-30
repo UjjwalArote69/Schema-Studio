@@ -1,6 +1,13 @@
+// ============================================================
+// FILE: src/app/layout.tsx
+// (Replaces your existing layout.tsx)
+// ============================================================
+
 import "./globals.css";
+import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/components/auth-provider"; // <-- Import your new wrapper
+import { AuthProvider } from "@/components/auth-provider";
+import { PostHogProvider } from "@/components/posthog-provider";
 
 export const metadata = {
   title: "Schema Studio",
@@ -13,10 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // suppressHydrationWarning is required for next-themes to work without React errors
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black">
-        {/* Wrap everything in your client-side AuthProvider */}
         <AuthProvider>
           <ThemeProvider
             attribute="class"
@@ -24,7 +29,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <Suspense fallback={null}>
+              <PostHogProvider>{children}</PostHogProvider>
+            </Suspense>
           </ThemeProvider>
         </AuthProvider>
       </body>
