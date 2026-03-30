@@ -44,6 +44,13 @@ export type UserMinAggregateOutputType = {
   plan: string | null
   aiGenerationsToday: number | null
   aiGenerationsResetAt: Date | null
+<<<<<<< HEAD
+=======
+  stripeCustomerId: string | null
+  stripeSubscriptionId: string | null
+  stripePriceId: string | null
+  stripeCurrentPeriodEnd: Date | null
+>>>>>>> feature/stripe-payments
 }
 
 export type UserMaxAggregateOutputType = {
@@ -56,6 +63,13 @@ export type UserMaxAggregateOutputType = {
   plan: string | null
   aiGenerationsToday: number | null
   aiGenerationsResetAt: Date | null
+<<<<<<< HEAD
+=======
+  stripeCustomerId: string | null
+  stripeSubscriptionId: string | null
+  stripePriceId: string | null
+  stripeCurrentPeriodEnd: Date | null
+>>>>>>> feature/stripe-payments
 }
 
 export type UserCountAggregateOutputType = {
@@ -68,6 +82,13 @@ export type UserCountAggregateOutputType = {
   plan: number
   aiGenerationsToday: number
   aiGenerationsResetAt: number
+<<<<<<< HEAD
+=======
+  stripeCustomerId: number
+  stripeSubscriptionId: number
+  stripePriceId: number
+  stripeCurrentPeriodEnd: number
+>>>>>>> feature/stripe-payments
   _all: number
 }
 
@@ -90,6 +111,13 @@ export type UserMinAggregateInputType = {
   plan?: true
   aiGenerationsToday?: true
   aiGenerationsResetAt?: true
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: true
+  stripeSubscriptionId?: true
+  stripePriceId?: true
+  stripeCurrentPeriodEnd?: true
+>>>>>>> feature/stripe-payments
 }
 
 export type UserMaxAggregateInputType = {
@@ -102,6 +130,13 @@ export type UserMaxAggregateInputType = {
   plan?: true
   aiGenerationsToday?: true
   aiGenerationsResetAt?: true
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: true
+  stripeSubscriptionId?: true
+  stripePriceId?: true
+  stripeCurrentPeriodEnd?: true
+>>>>>>> feature/stripe-payments
 }
 
 export type UserCountAggregateInputType = {
@@ -114,6 +149,13 @@ export type UserCountAggregateInputType = {
   plan?: true
   aiGenerationsToday?: true
   aiGenerationsResetAt?: true
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: true
+  stripeSubscriptionId?: true
+  stripePriceId?: true
+  stripeCurrentPeriodEnd?: true
+>>>>>>> feature/stripe-payments
   _all?: true
 }
 
@@ -213,6 +255,13 @@ export type UserGroupByOutputType = {
   plan: string
   aiGenerationsToday: number
   aiGenerationsResetAt: Date
+<<<<<<< HEAD
+=======
+  stripeCustomerId: string | null
+  stripeSubscriptionId: string | null
+  stripePriceId: string | null
+  stripeCurrentPeriodEnd: Date | null
+>>>>>>> feature/stripe-payments
   _count: UserCountAggregateOutputType | null
   _avg: UserAvgAggregateOutputType | null
   _sum: UserSumAggregateOutputType | null
@@ -248,6 +297,13 @@ export type UserWhereInput = {
   plan?: Prisma.StringFilter<"User"> | string
   aiGenerationsToday?: Prisma.IntFilter<"User"> | number
   aiGenerationsResetAt?: Prisma.DateTimeFilter<"User"> | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.StringNullableFilter<"User"> | string | null
+  stripeSubscriptionId?: Prisma.StringNullableFilter<"User"> | string | null
+  stripePriceId?: Prisma.StringNullableFilter<"User"> | string | null
+  stripeCurrentPeriodEnd?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
   projects?: Prisma.ProjectListRelationFilter
@@ -263,6 +319,13 @@ export type UserOrderByWithRelationInput = {
   plan?: Prisma.SortOrder
   aiGenerationsToday?: Prisma.SortOrder
   aiGenerationsResetAt?: Prisma.SortOrder
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeCurrentPeriodEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountOrderByRelationAggregateInput
   sessions?: Prisma.SessionOrderByRelationAggregateInput
   projects?: Prisma.ProjectOrderByRelationAggregateInput
@@ -271,6 +334,8 @@ export type UserOrderByWithRelationInput = {
 export type UserWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   email?: string
+  stripeCustomerId?: string
+  stripeSubscriptionId?: string
   AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
@@ -281,10 +346,15 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   plan?: Prisma.StringFilter<"User"> | string
   aiGenerationsToday?: Prisma.IntFilter<"User"> | number
   aiGenerationsResetAt?: Prisma.DateTimeFilter<"User"> | Date | string
+<<<<<<< HEAD
+=======
+  stripePriceId?: Prisma.StringNullableFilter<"User"> | string | null
+  stripeCurrentPeriodEnd?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountListRelationFilter
   sessions?: Prisma.SessionListRelationFilter
   projects?: Prisma.ProjectListRelationFilter
-}, "id" | "email">
+}, "id" | "email" | "stripeCustomerId" | "stripeSubscriptionId">
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -296,6 +366,13 @@ export type UserOrderByWithAggregationInput = {
   plan?: Prisma.SortOrder
   aiGenerationsToday?: Prisma.SortOrder
   aiGenerationsResetAt?: Prisma.SortOrder
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeCurrentPeriodEnd?: Prisma.SortOrderInput | Prisma.SortOrder
+>>>>>>> feature/stripe-payments
   _count?: Prisma.UserCountOrderByAggregateInput
   _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
@@ -316,6 +393,13 @@ export type UserScalarWhereWithAggregatesInput = {
   plan?: Prisma.StringWithAggregatesFilter<"User"> | string
   aiGenerationsToday?: Prisma.IntWithAggregatesFilter<"User"> | number
   aiGenerationsResetAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  stripeSubscriptionId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  stripePriceId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  stripeCurrentPeriodEnd?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+>>>>>>> feature/stripe-payments
 }
 
 export type UserCreateInput = {
@@ -328,6 +412,13 @@ export type UserCreateInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   projects?: Prisma.ProjectCreateNestedManyWithoutUserInput
@@ -343,6 +434,13 @@ export type UserUncheckedCreateInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutUserInput
@@ -358,6 +456,13 @@ export type UserUpdateInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   projects?: Prisma.ProjectUpdateManyWithoutUserNestedInput
@@ -373,6 +478,13 @@ export type UserUncheckedUpdateInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.ProjectUncheckedUpdateManyWithoutUserNestedInput
@@ -388,6 +500,13 @@ export type UserCreateManyInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
 }
 
 export type UserUpdateManyMutationInput = {
@@ -400,6 +519,13 @@ export type UserUpdateManyMutationInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -412,6 +538,13 @@ export type UserUncheckedUpdateManyInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
 }
 
 export type UserScalarRelationFilter = {
@@ -429,6 +562,13 @@ export type UserCountOrderByAggregateInput = {
   plan?: Prisma.SortOrder
   aiGenerationsToday?: Prisma.SortOrder
   aiGenerationsResetAt?: Prisma.SortOrder
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
+  stripeCurrentPeriodEnd?: Prisma.SortOrder
+>>>>>>> feature/stripe-payments
 }
 
 export type UserAvgOrderByAggregateInput = {
@@ -445,6 +585,13 @@ export type UserMaxOrderByAggregateInput = {
   plan?: Prisma.SortOrder
   aiGenerationsToday?: Prisma.SortOrder
   aiGenerationsResetAt?: Prisma.SortOrder
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
+  stripeCurrentPeriodEnd?: Prisma.SortOrder
+>>>>>>> feature/stripe-payments
 }
 
 export type UserMinOrderByAggregateInput = {
@@ -457,6 +604,13 @@ export type UserMinOrderByAggregateInput = {
   plan?: Prisma.SortOrder
   aiGenerationsToday?: Prisma.SortOrder
   aiGenerationsResetAt?: Prisma.SortOrder
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.SortOrder
+  stripeSubscriptionId?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
+  stripeCurrentPeriodEnd?: Prisma.SortOrder
+>>>>>>> feature/stripe-payments
 }
 
 export type UserSumOrderByAggregateInput = {
@@ -527,6 +681,13 @@ export type UserCreateWithoutProjectsInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
 }
@@ -541,6 +702,13 @@ export type UserUncheckedCreateWithoutProjectsInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
 }
@@ -571,6 +739,13 @@ export type UserUpdateWithoutProjectsInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
 }
@@ -585,6 +760,13 @@ export type UserUncheckedUpdateWithoutProjectsInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -599,6 +781,13 @@ export type UserCreateWithoutAccountsInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   projects?: Prisma.ProjectCreateNestedManyWithoutUserInput
 }
@@ -613,6 +802,13 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutUserInput
 }
@@ -643,6 +839,13 @@ export type UserUpdateWithoutAccountsInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   projects?: Prisma.ProjectUpdateManyWithoutUserNestedInput
 }
@@ -657,6 +860,13 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.ProjectUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -671,6 +881,13 @@ export type UserCreateWithoutSessionsInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   projects?: Prisma.ProjectCreateNestedManyWithoutUserInput
 }
@@ -685,6 +902,13 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   plan?: string
   aiGenerationsToday?: number
   aiGenerationsResetAt?: Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: string | null
+  stripeSubscriptionId?: string | null
+  stripePriceId?: string | null
+  stripeCurrentPeriodEnd?: Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutUserInput
 }
@@ -715,6 +939,13 @@ export type UserUpdateWithoutSessionsInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   projects?: Prisma.ProjectUpdateManyWithoutUserNestedInput
 }
@@ -729,6 +960,13 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   plan?: Prisma.StringFieldUpdateOperationsInput | string
   aiGenerationsToday?: Prisma.IntFieldUpdateOperationsInput | number
   aiGenerationsResetAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCurrentPeriodEnd?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+>>>>>>> feature/stripe-payments
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.ProjectUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -792,6 +1030,13 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   plan?: boolean
   aiGenerationsToday?: boolean
   aiGenerationsResetAt?: boolean
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  stripePriceId?: boolean
+  stripeCurrentPeriodEnd?: boolean
+>>>>>>> feature/stripe-payments
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
@@ -808,6 +1053,13 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   plan?: boolean
   aiGenerationsToday?: boolean
   aiGenerationsResetAt?: boolean
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  stripePriceId?: boolean
+  stripeCurrentPeriodEnd?: boolean
+>>>>>>> feature/stripe-payments
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -820,6 +1072,13 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   plan?: boolean
   aiGenerationsToday?: boolean
   aiGenerationsResetAt?: boolean
+<<<<<<< HEAD
+=======
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  stripePriceId?: boolean
+  stripeCurrentPeriodEnd?: boolean
+>>>>>>> feature/stripe-payments
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -832,9 +1091,19 @@ export type UserSelectScalar = {
   plan?: boolean
   aiGenerationsToday?: boolean
   aiGenerationsResetAt?: boolean
+<<<<<<< HEAD
 }
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "plan" | "aiGenerationsToday" | "aiGenerationsResetAt", ExtArgs["result"]["user"]>
+=======
+  stripeCustomerId?: boolean
+  stripeSubscriptionId?: boolean
+  stripePriceId?: boolean
+  stripeCurrentPeriodEnd?: boolean
+}
+
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "password" | "plan" | "aiGenerationsToday" | "aiGenerationsResetAt" | "stripeCustomerId" | "stripeSubscriptionId" | "stripePriceId" | "stripeCurrentPeriodEnd", ExtArgs["result"]["user"]>
+>>>>>>> feature/stripe-payments
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -861,6 +1130,13 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     plan: string
     aiGenerationsToday: number
     aiGenerationsResetAt: Date
+<<<<<<< HEAD
+=======
+    stripeCustomerId: string | null
+    stripeSubscriptionId: string | null
+    stripePriceId: string | null
+    stripeCurrentPeriodEnd: Date | null
+>>>>>>> feature/stripe-payments
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -1296,6 +1572,13 @@ export interface UserFieldRefs {
   readonly plan: Prisma.FieldRef<"User", 'String'>
   readonly aiGenerationsToday: Prisma.FieldRef<"User", 'Int'>
   readonly aiGenerationsResetAt: Prisma.FieldRef<"User", 'DateTime'>
+<<<<<<< HEAD
+=======
+  readonly stripeCustomerId: Prisma.FieldRef<"User", 'String'>
+  readonly stripeSubscriptionId: Prisma.FieldRef<"User", 'String'>
+  readonly stripePriceId: Prisma.FieldRef<"User", 'String'>
+  readonly stripeCurrentPeriodEnd: Prisma.FieldRef<"User", 'DateTime'>
+>>>>>>> feature/stripe-payments
 }
     
 

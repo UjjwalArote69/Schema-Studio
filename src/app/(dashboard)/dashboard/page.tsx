@@ -1,3 +1,8 @@
+// ============================================================
+// FILE: src/app/(dashboard)/dashboard/page.tsx
+// (Replaces your existing dashboard/page.tsx)
+// ============================================================
+
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -7,7 +12,11 @@ import { ImportButton } from "@/components/dashboard/import-button";
 import { ProjectGrid } from "@/components/dashboard/project-grid";
 import { UsageBanner } from "@/components/dashboard/usage-banner";
 import { getAllProjects, getUser } from "@/lib/dashboard-queries";
+<<<<<<< HEAD
 import { getUsageSummary } from "@/lib/plan-enforement";
+=======
+import { getUsageSummary } from "@/lib/plan-enforcement";
+>>>>>>> feature/stripe-payments
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -26,7 +35,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-12">
-      {/* Premium Monochrome Welcome Banner */}
+      {/* Welcome Banner */}
       <div className="relative mb-8 md:mb-10 p-6 md:p-8 rounded-2xl md:rounded-3xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 overflow-hidden shadow-sm">
         <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.2] bg-[radial-gradient(#a1a1aa_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
@@ -46,7 +55,6 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Buttons: Stacked on mobile, inline on sm+ */}
         <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           <ImportButton />
           <form action={createSchema} className="w-full sm:w-auto">
@@ -57,7 +65,11 @@ export default async function DashboardPage() {
               title={
                 canCreateProject
                   ? "Create a new schema"
+<<<<<<< HEAD
                   : `Free plan limit: ${usage.projects.limit} projects`
+=======
+                  : `Free plan limit: ${usage.projects.limit} projects. Upgrade to Pro!`
+>>>>>>> feature/stripe-payments
               }
             >
               <Plus className="w-5 h-5" />
@@ -67,7 +79,11 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Plan usage banner (free tier only) */}
+=======
+      {/* Plan usage banner — shows differently for free vs pro */}
+>>>>>>> feature/stripe-payments
       <UsageBanner
         usage={{
           plan: usage.plan,
@@ -80,7 +96,11 @@ export default async function DashboardPage() {
         }}
       />
 
+<<<<<<< HEAD
       {/* Search + Project Grid (client component for instant filtering) */}
+=======
+      {/* Project Grid */}
+>>>>>>> feature/stripe-payments
       <ProjectGrid projects={projects} />
     </div>
   );

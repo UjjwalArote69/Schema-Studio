@@ -1,10 +1,15 @@
+// ============================================================
+// FILE: src/app/actions/snapshot-actions.ts
+// (Replaces your existing snapshot-actions.ts)
+// ============================================================
+
 "use server";
 
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getMaxSnapshots } from "@/lib/plan-enforcement";
 
-const MAX_SNAPSHOTS_PER_PROJECT = 30;
 const MIN_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes between auto-snapshots
 
 // ═══════════════════════════════════════════════════════════════
@@ -35,9 +40,9 @@ async function requireOwnedProject(projectId: string) {
 export async function createSnapshot(
   projectId: string,
   label: string,
-  data: unknown,
+  data: unknown
 ) {
-  await requireOwnedProject(projectId);
+  const { userId } = await requireOwnedProject(projectId);
 
   // Auto-snapshots: skip if the last snapshot was created very recently
   if (label === "Auto-save") {
@@ -59,23 +64,23 @@ export async function createSnapshot(
   const snapshot = await prisma.projectSnapshot.create({
     data: {
       projectId,
-      label: label.slice(0, 100), // Cap label length
+      label: label.slice(0, 100),
       data: data as object,
     },
     select: { id: true, label: true, createdAt: true },
   });
 
-  // Prune old snapshots beyond the limit (keep newest)
+  // Prune old snapshots beyond the plan-based limit (keep newest)
+  const maxSnapshots = await getMaxSnapshots(userId);
+
   const allSnapshots = await prisma.projectSnapshot.findMany({
     where: { projectId },
     orderBy: { createdAt: "desc" },
     select: { id: true },
   });
 
-  if (allSnapshots.length > MAX_SNAPSHOTS_PER_PROJECT) {
-    const toDelete = allSnapshots
-      .slice(MAX_SNAPSHOTS_PER_PROJECT)
-      .map((s) => s.id);
+  if (allSnapshots.length > maxSnapshots) {
+    const toDelete = allSnapshots.slice(maxSnapshots).map((s) => s.id);
 
     await prisma.projectSnapshot.deleteMany({
       where: { id: { in: toDelete } },
@@ -109,7 +114,7 @@ export async function listSnapshots(projectId: string) {
 
 export async function restoreSnapshot(
   projectId: string,
-  snapshotId: string,
+  snapshotId: string
 ) {
   await requireOwnedProject(projectId);
 
@@ -153,7 +158,7 @@ export async function restoreSnapshot(
 
 export async function deleteSnapshot(
   projectId: string,
-  snapshotId: string,
+  snapshotId: string
 ) {
   await requireOwnedProject(projectId);
 
