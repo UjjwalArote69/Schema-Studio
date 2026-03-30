@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-"use client";
 
-import { Database, Sparkles, Zap } from "lucide-react";
-=======
 // ============================================================
 // FILE: src/components/dashboard/usage-banner.tsx
 // (Replaces your existing usage-banner.tsx)
@@ -12,7 +8,6 @@ import { Database, Sparkles, Zap } from "lucide-react";
 
 import { Zap, Crown, ArrowRight } from "lucide-react";
 import Link from "next/link";
->>>>>>> feature/stripe-payments
 
 interface UsageSummaryData {
   plan: "free" | "pro";
@@ -20,10 +15,6 @@ interface UsageSummaryData {
   aiGenerations: { current: number; limit: number; resetsAt: string };
 }
 
-<<<<<<< HEAD
-function UsageBar({ current, limit, label }: { current: number; limit: number; label: string }) {
-  const pct = limit === Infinity ? 0 : Math.min((current / limit) * 100, 100);
-=======
 function UsageBar({
   current,
   limit,
@@ -35,17 +26,12 @@ function UsageBar({
 }) {
   const pct =
     limit === Infinity ? 0 : Math.min((current / limit) * 100, 100);
->>>>>>> feature/stripe-payments
   const isNearLimit = pct >= 80;
   const isAtLimit = current >= limit && limit !== Infinity;
 
   return (
     <div className="flex-1 min-w-[140px]">
       <div className="flex items-center justify-between mb-1.5">
-<<<<<<< HEAD
-        <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">{label}</span>
-        <span className={`text-xs font-bold tabular-nums ${isAtLimit ? "text-red-500" : isNearLimit ? "text-amber-500" : "text-zinc-900 dark:text-white"}`}>
-=======
         <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
           {label}
         </span>
@@ -58,16 +44,12 @@ function UsageBar({
                 : "text-zinc-900 dark:text-white"
           }`}
         >
->>>>>>> feature/stripe-payments
           {current} / {limit === Infinity ? "∞" : limit}
         </span>
       </div>
       {limit !== Infinity && (
         <div className="h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
           <div
-<<<<<<< HEAD
-            className={`h-full rounded-full transition-all duration-500 ${isAtLimit ? "bg-red-500" : isNearLimit ? "bg-amber-500" : "bg-zinc-900 dark:bg-white"}`}
-=======
             className={`h-full rounded-full transition-all duration-500 ${
               isAtLimit
                 ? "bg-red-500"
@@ -75,7 +57,6 @@ function UsageBar({
                   ? "bg-amber-500"
                   : "bg-zinc-900 dark:bg-white"
             }`}
->>>>>>> feature/stripe-payments
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -85,18 +66,6 @@ function UsageBar({
 }
 
 export function UsageBanner({ usage }: { usage: UsageSummaryData }) {
-<<<<<<< HEAD
-  if (usage.plan === "pro") return null;
-
-  return (
-    <div className="mb-6 p-4 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="p-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-lg">
-            <Zap className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-          </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Free Plan</span>
-=======
   // Pro users see a subtle confirmation instead of usage bars
   if (usage.plan === "pro") {
     return (
@@ -157,7 +126,6 @@ export function UsageBanner({ usage }: { usage: UsageSummaryData }) {
           <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
             Free Plan
           </span>
->>>>>>> feature/stripe-payments
         </div>
 
         <div className="flex flex-wrap items-center gap-6 flex-1">
@@ -172,8 +140,6 @@ export function UsageBanner({ usage }: { usage: UsageSummaryData }) {
             label="AI / day"
           />
         </div>
-<<<<<<< HEAD
-=======
 
         <Link
           href="/settings?tab=billing"
@@ -186,7 +152,6 @@ export function UsageBanner({ usage }: { usage: UsageSummaryData }) {
           {somethingAtLimit ? "Upgrade Now" : "Upgrade"}
           <ArrowRight className="w-3 h-3" />
         </Link>
->>>>>>> feature/stripe-payments
       </div>
     </div>
   );

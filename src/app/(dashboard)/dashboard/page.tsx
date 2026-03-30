@@ -12,11 +12,8 @@ import { ImportButton } from "@/components/dashboard/import-button";
 import { ProjectGrid } from "@/components/dashboard/project-grid";
 import { UsageBanner } from "@/components/dashboard/usage-banner";
 import { getAllProjects, getUser } from "@/lib/dashboard-queries";
-<<<<<<< HEAD
-import { getUsageSummary } from "@/lib/plan-enforement";
-=======
 import { getUsageSummary } from "@/lib/plan-enforcement";
->>>>>>> feature/stripe-payments
+
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -65,11 +62,7 @@ export default async function DashboardPage() {
               title={
                 canCreateProject
                   ? "Create a new schema"
-<<<<<<< HEAD
-                  : `Free plan limit: ${usage.projects.limit} projects`
-=======
                   : `Free plan limit: ${usage.projects.limit} projects. Upgrade to Pro!`
->>>>>>> feature/stripe-payments
               }
             >
               <Plus className="w-5 h-5" />
@@ -79,11 +72,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-<<<<<<< HEAD
-      {/* Plan usage banner (free tier only) */}
-=======
-      {/* Plan usage banner — shows differently for free vs pro */}
->>>>>>> feature/stripe-payments
       <UsageBanner
         usage={{
           plan: usage.plan,
@@ -96,11 +84,6 @@ export default async function DashboardPage() {
         }}
       />
 
-<<<<<<< HEAD
-      {/* Search + Project Grid (client component for instant filtering) */}
-=======
-      {/* Project Grid */}
->>>>>>> feature/stripe-payments
       <ProjectGrid projects={projects} />
     </div>
   );

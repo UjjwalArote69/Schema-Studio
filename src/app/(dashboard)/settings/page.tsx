@@ -26,11 +26,6 @@ export default async function SettingsPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 md:py-12">
-<<<<<<< HEAD
-      {/* Symmetrical Header */}
-=======
-      {/* Header */}
->>>>>>> feature/stripe-payments
       <div className="mb-10 md:mb-12 border-b border-zinc-200 dark:border-zinc-800 pb-8">
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-zinc-900 dark:text-white">
           Account Settings
@@ -39,29 +34,10 @@ export default async function SettingsPage({
           Manage your preferences, update your profile, and control your data.
         </p>
       </div>
-
-<<<<<<< HEAD
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-        {/* Sidebar Navigation */}
-        <div className="col-span-1 space-y-1">
-          <div className="px-3 py-2.5 bg-white dark:bg-zinc-800/80 rounded-lg text-sm font-bold text-black dark:text-white flex items-center gap-3 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-700 transition-all">
-            <User className="w-4 h-4" /> Profile
-          </div>
-          <div className="px-3 py-2.5 text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white cursor-not-allowed opacity-60 flex items-center gap-3 transition-colors">
-            <CreditCard className="w-4 h-4" /> Billing
-            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500 px-1.5 py-0.5 rounded-md">
-              Soon
-            </span>
-          </div>
-          <div className="px-3 py-2.5 text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white cursor-not-allowed opacity-60 flex items-center gap-3 transition-colors">
-            <Shield className="w-4 h-4" /> Security
-          </div>
-=======
       {/* Success / Canceled banners */}
       {params.upgraded === "true" && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-sm font-medium text-emerald-700 dark:text-emerald-300 animate-in fade-in slide-in-from-top-2">
           🎉 Welcome to Pro! Your account has been upgraded successfully.
->>>>>>> feature/stripe-payments
         </div>
       )}
       {params.canceled === "true" && (
@@ -70,52 +46,6 @@ export default async function SettingsPage({
         </div>
       )}
 
-<<<<<<< HEAD
-        {/* Main Content */}
-        <div className="col-span-1 md:col-span-3 space-y-8 max-w-3xl">
-          {/* Profile Card */}
-          <div className="bg-white dark:bg-[#0c0c0e] border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
-            {/* Card Header */}
-            <div className="px-6 md:px-8 py-5 border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black flex items-center justify-center text-sm font-bold flex-shrink-0">
-                  {dbUser.name?.charAt(0)?.toUpperCase() || "U"}
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                    Profile Information
-                  </h2>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Update your display name and view your account details.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Card Body */}
-            <div className="px-6 md:px-8 py-6 md:py-8 space-y-6">
-              {/* Read-only email field */}
-              <div>
-                <label className="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Email Address
-                </label>
-                <div className="flex items-center gap-3 w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm text-zinc-500 dark:text-zinc-400">
-                  <Mail className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-                  <span className="truncate">{dbUser.email}</span>
-                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex-shrink-0">
-                    Read-only
-                  </span>
-                </div>
-              </div>
-
-              {/* Editable profile form with feedback */}
-              <ProfileForm defaultName={dbUser.name || ""} />
-            </div>
-          </div>
-
-          {/* Danger Zone */}
-          <DeleteAccountForm userEmail={dbUser.email || ""} />
-=======
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
         {/* Sidebar Navigation — client component for active tab */}
         <SettingsTabs activeTab={activeTab} />
@@ -172,7 +102,6 @@ export default async function SettingsPage({
               }
             />
           )}
->>>>>>> feature/stripe-payments
         </div>
       </div>
     </div>
