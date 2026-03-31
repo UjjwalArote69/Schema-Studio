@@ -1,3 +1,10 @@
+// ============================================================
+// FILE: src/components/settings/settings-tabs.tsx
+// (Replaces your existing settings-tabs.tsx)
+//
+// Changes: Enabled the Security tab
+// ============================================================
+
 "use client";
 
 import Link from "next/link";
@@ -9,14 +16,8 @@ interface SettingsTabsProps {
 
 const TABS = [
   { id: "profile", label: "Profile", icon: User, href: "/settings?tab=profile" },
+  { id: "security", label: "Security", icon: Shield, href: "/settings?tab=security" },
   { id: "billing", label: "Billing", icon: CreditCard, href: "/settings?tab=billing" },
-  {
-    id: "security",
-    label: "Security",
-    icon: Shield,
-    href: "#",
-    disabled: true,
-  },
 ];
 
 export function SettingsTabs({ activeTab }: SettingsTabsProps) {
@@ -25,17 +26,6 @@ export function SettingsTabs({ activeTab }: SettingsTabsProps) {
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
-
-        if (tab.disabled) {
-          return (
-            <div
-              key={tab.id}
-              className="px-3 py-2.5 text-sm font-medium text-zinc-500 cursor-not-allowed opacity-60 flex items-center gap-3 transition-colors"
-            >
-              <Icon className="w-4 h-4" /> {tab.label}
-            </div>
-          );
-        }
 
         return (
           <Link

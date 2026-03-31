@@ -82,6 +82,7 @@ model User {
   accounts             Account[]
   sessions             Session[]
   projects             Project[]
+  passwordResetTokens  PasswordResetToken[]
 }
 
 model VerificationToken {
@@ -105,4 +106,21 @@ model ProjectSnapshot {
   createdAt DateTime @default(now())
 
   @@index([projectId, createdAt(sort: Desc)])
+}
+
+// ==========================================
+// 4. PASSWORD RESET TOKENS
+// ==========================================
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
 }

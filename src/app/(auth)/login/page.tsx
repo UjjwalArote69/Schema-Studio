@@ -1,10 +1,3 @@
-// ============================================================
-// FILE: src/app/(auth)/login/page.tsx
-// (Replaces your existing login/page.tsx)
-//
-// Changes: Added analytics.loggedIn tracking on successful login
-// ============================================================
-
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
@@ -30,6 +23,9 @@ function LoginContent() {
   useEffect(() => {
     if (searchParams.get("registered") === "true") {
       setSuccessMsg("Account created! Please log in.");
+    }
+    if (searchParams.get("reset") === "true") {
+      setSuccessMsg("Password reset successfully! Please log in with your new password.");
     }
   }, [searchParams]);
 
@@ -88,7 +84,15 @@ function LoginContent() {
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all text-sm font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400" placeholder="you@example.com" />
         </div>
         <div>
-          <label className="block text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1.5">Password</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-sm font-bold text-zinc-900 dark:text-zinc-100">Password</label>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-semibold text-zinc-500 hover:text-black dark:hover:text-white transition-colors"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all text-sm font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400" placeholder="••••••••" />
         </div>
         <button type="submit" disabled={loading} className="w-full py-3 px-4 bg-black dark:bg-white text-white dark:text-black font-bold text-sm rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 shadow-md mt-2">

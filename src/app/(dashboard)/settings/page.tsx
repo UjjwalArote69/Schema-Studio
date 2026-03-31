@@ -1,11 +1,19 @@
+// ============================================================
+// FILE: src/app/(dashboard)/settings/page.tsx
+// (Replaces your existing settings/page.tsx)
+//
+// Changes: Added security tab with password change form
+// ============================================================
+
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { User, Mail, Shield, CreditCard } from "lucide-react";
 import { DeleteAccountForm } from "@/components/settings/delete-account-form";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { BillingForm } from "@/components/settings/billing-form";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
+import { Mail } from "lucide-react";
 
 export default async function SettingsPage({
   searchParams,
@@ -17,12 +25,25 @@ export default async function SettingsPage({
 
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
+    include: {
+      accounts: {
+        select: { provider: true },
+        take: 1,
+      },
+    },
   });
 
   if (!dbUser) return null;
 
   const params = await searchParams;
   const activeTab = params.tab || "profile";
+
+  // Determine auth method for security tab
+  const hasPassword = !!dbUser.password;
+  const oauthProvider = dbUser.accounts[0]?.provider
+    ? dbUser.accounts[0].provider.charAt(0).toUpperCase() +
+      dbUser.accounts[0].provider.slice(1)
+    : null;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 md:py-12">
@@ -34,6 +55,7 @@ export default async function SettingsPage({
           Manage your preferences, update your profile, and control your data.
         </p>
       </div>
+
       {/* Success / Canceled banners */}
       {params.upgraded === "true" && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-xl text-sm font-medium text-emerald-700 dark:text-emerald-300 animate-in fade-in slide-in-from-top-2">
@@ -47,7 +69,7 @@ export default async function SettingsPage({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-        {/* Sidebar Navigation — client component for active tab */}
+        {/* Sidebar Navigation */}
         <SettingsTabs activeTab={activeTab} />
 
         {/* Main Content */}
@@ -92,6 +114,13 @@ export default async function SettingsPage({
               {/* Danger Zone */}
               <DeleteAccountForm userEmail={dbUser.email || ""} />
             </>
+          )}
+
+          {activeTab === "security" && (
+            <ChangePasswordForm
+              hasPassword={hasPassword}
+              oauthProvider={oauthProvider}
+            />
           )}
 
           {activeTab === "billing" && (

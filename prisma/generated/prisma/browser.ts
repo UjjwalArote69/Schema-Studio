@@ -47,3 +47,8 @@ export type VerificationToken = Prisma.VerificationTokenModel
  * 
  */
 export type ProjectSnapshot = Prisma.ProjectSnapshotModel
+/**
+ * Model PasswordResetToken
+ * 
+ */
+export type PasswordResetToken = Prisma.PasswordResetTokenModel

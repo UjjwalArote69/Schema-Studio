@@ -56,7 +56,8 @@ export const ModelName = {
   Session: 'Session',
   User: 'User',
   VerificationToken: 'VerificationToken',
-  ProjectSnapshot: 'ProjectSnapshot'
+  ProjectSnapshot: 'ProjectSnapshot',
+  PasswordResetToken: 'PasswordResetToken'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -152,6 +153,18 @@ export const ProjectSnapshotScalarFieldEnum = {
 } as const
 
 export type ProjectSnapshotScalarFieldEnum = (typeof ProjectSnapshotScalarFieldEnum)[keyof typeof ProjectSnapshotScalarFieldEnum]
+
+
+export const PasswordResetTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  token: 'token',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type PasswordResetTokenScalarFieldEnum = (typeof PasswordResetTokenScalarFieldEnum)[keyof typeof PasswordResetTokenScalarFieldEnum]
 
 
 export const SortOrder = {
