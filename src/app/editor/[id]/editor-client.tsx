@@ -17,6 +17,7 @@ import {
   Redo2,
   AlertTriangle,
   RotateCcw,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -24,6 +25,7 @@ import { updateSchema } from "@/app/actions/schema-actions";
 import { useSchemaEditor } from "@/hooks/useSchemaEditor";
 import { SchemaCanvas } from "@/components/editor/schema-canvas";
 import { ImportModal } from "@/components/editor/import-modal";
+import { ShareModal } from "@/components/editor/share-modal";
 
 // ═══════════════════════════════════════════════════════════════
 // Authenticated Editor — owns auto-save, project name, toolbar
@@ -35,6 +37,7 @@ function EditorClient({ project }: { project: any }) {
 
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
 
@@ -55,15 +58,6 @@ function EditorClient({ project }: { project: any }) {
   }, [project.data, setSchema]);
 
   // ── PERF: Ref-based auto-save ───────────────────────────────
-  // Instead of putting tables/relations in the effect deps (which
-  // would trigger the effect on every position update during drag),
-  // we store them in refs. The effect uses a polling interval to
-  // check if the data has changed, but only serializes + saves
-  // after a debounce period of inactivity.
-  //
-  // This eliminates the cascade:
-  //   drag → tables change → effect fires → timer created → timer cleared
-  //   (repeated 60x/sec during drag)
   const tablesRef = useRef(tables);
   tablesRef.current = tables;
   const relationsRef = useRef(relations);
@@ -71,9 +65,6 @@ function EditorClient({ project }: { project: any }) {
   const projectNameRef = useRef(projectName);
   projectNameRef.current = projectName;
 
-  // Zustand's `tables` array reference changes on every mutation.
-  // We track the last-seen reference to know when to start the
-  // debounce timer, without running JSON.stringify on every frame.
   const lastSeenTablesRef = useRef(tables);
   const lastSeenRelationsRef = useRef(relations);
   const lastSeenNameRef = useRef(projectName);
@@ -82,7 +73,6 @@ function EditorClient({ project }: { project: any }) {
   useEffect(() => {
     if (!isReady) return;
 
-    // Check if anything actually changed (reference equality — O(1))
     const tablesChanged = tables !== lastSeenTablesRef.current;
     const relationsChanged = relations !== lastSeenRelationsRef.current;
     const nameChanged = projectName !== lastSeenNameRef.current;
@@ -93,7 +83,6 @@ function EditorClient({ project }: { project: any }) {
 
     if (!tablesChanged && !relationsChanged && !nameChanged) return;
 
-    // Clear previous debounce timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -101,7 +90,6 @@ function EditorClient({ project }: { project: any }) {
     const thisVersion = ++saveVersionRef.current;
 
     debounceTimerRef.current = setTimeout(() => {
-      // Stringify inside the timer — only runs after 1.5s of inactivity
       const currentTables = tablesRef.current;
       const currentRelations = relationsRef.current;
       const currentName = projectNameRef.current;
@@ -150,6 +138,8 @@ function EditorClient({ project }: { project: any }) {
   const closeExport = useCallback(() => setIsExportOpen(false), []);
   const openImport = useCallback(() => setIsImportOpen(true), []);
   const closeImport = useCallback(() => setIsImportOpen(false), []);
+  const openShare = useCallback(() => setIsShareOpen(true), []);
+  const closeShare = useCallback(() => setIsShareOpen(false), []);
 
   // ── Derived values for toolbar (cheap comparisons) ──────────
   const hasUndo = past.length > 0;
@@ -229,6 +219,15 @@ function EditorClient({ project }: { project: any }) {
           </button>
 
           <button
+            onClick={openShare}
+            title="Share Schema"
+            className="flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-black dark:text-white rounded-md text-xs font-semibold transition-colors border border-zinc-200 dark:border-zinc-800 shrink-0"
+          >
+            <Share2 className="w-5 h-5 sm:w-3.5 sm:h-3.5" />
+            <span className="hidden sm:inline">Share</span>
+          </button>
+
+          <button
             onClick={openExport}
             disabled={!hasTables}
             title="Export Code"
@@ -243,7 +242,7 @@ function EditorClient({ project }: { project: any }) {
         </div>
       </div>
     ),
-    [projectName, isSaving, hasUndo, hasRedo, hasTables, undo, redo, handleAddTable, openExport],
+    [projectName, isSaving, hasUndo, hasRedo, hasTables, undo, redo, handleAddTable, openExport, openShare],
   );
 
   return (
@@ -257,6 +256,11 @@ function EditorClient({ project }: { project: any }) {
         isReady={isReady}
       />
       <ImportModal isOpen={isImportOpen} onClose={closeImport} />
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={closeShare}
+        projectId={project.id}
+      />
     </>
   );
 }

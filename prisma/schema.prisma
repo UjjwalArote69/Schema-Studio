@@ -28,6 +28,9 @@ model Project {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Public sharing
+  shareToken String? @unique
+
   snapshots ProjectSnapshot[]
 }
 

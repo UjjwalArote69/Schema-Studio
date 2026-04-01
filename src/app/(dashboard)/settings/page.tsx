@@ -1,10 +1,10 @@
 // ============================================================
 // FILE: src/app/(dashboard)/settings/page.tsx
-// (Replaces your existing settings/page.tsx)
 //
-// Changes: Added security tab with password change form
+// Changes: Added metadata export for SEO
 // ============================================================
 
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +14,13 @@ import { BillingForm } from "@/components/settings/billing-form";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import { SettingsTabs } from "@/components/settings/settings-tabs";
 import { Mail } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Settings",
+  description:
+    "Manage your SchemaStudio account settings, profile, security, and billing.",
+  robots: { index: false },
+};
 
 export default async function SettingsPage({
   searchParams,
