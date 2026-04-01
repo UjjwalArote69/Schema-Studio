@@ -1,6 +1,5 @@
 // ============================================================
-// FILE: src/lib/plan-limits.ts
-// (Replaces your existing plan-limits.ts)
+// FILE: src/lib/plan-limit.ts
 // ============================================================
 
 export type PlanTier = "free" | "pro";
@@ -15,7 +14,7 @@ export interface PlanLimits {
 
 const FREE_LIMITS: PlanLimits = {
   maxProjects: 3,
-  maxTablesPerProject: 10,
+  maxTablesPerProject: 15,
   maxAIGenerationsPerDay: 5,
   maxSnapshotsPerProject: 5,
   maxColumnsPerTable: 15,

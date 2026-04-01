@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { assertCanCreateProject, assertCanAddTables } from "@/lib/plan-enforement";
+import { assertCanCreateProject, assertCanAddTables } from "@/lib/plan-enforcement";
 
 // ═══════════════════════════════════════════════════════════════
 // Validation schemas

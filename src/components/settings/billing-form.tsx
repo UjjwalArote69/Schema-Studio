@@ -1,8 +1,7 @@
 // ============================================================
 // FILE: src/components/settings/billing-form.tsx
-// (Replaces your existing billing-form.tsx)
 //
-// Changes: Added analytics.upgradeClicked and billingPortalOpened
+// Changes: Updated free plan table display from 10 to 15
 // ============================================================
 
 "use client";
@@ -127,7 +126,7 @@ export function BillingForm({ plan, stripeCurrentPeriodEnd }: BillingFormProps) 
                 <div className="flex items-center gap-2 mb-4"><Zap className="w-4 h-4 text-zinc-400" /><span className="text-sm font-bold text-zinc-500">Free</span><span className="ml-auto px-2 py-0.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-500 text-[10px] font-bold rounded-md uppercase">Current</span></div>
                 <div className="flex items-baseline gap-1 mb-6"><span className="text-3xl font-extrabold text-zinc-900 dark:text-white">₹0</span><span className="text-sm text-zinc-400">/forever</span></div>
                 <div className="space-y-3.5 flex-1">
-                  <LimitRow label="Projects" value="3" /><LimitRow label="Tables / project" value="10" /><LimitRow label="AI generations" value="5 / day" /><LimitRow label="Snapshots" value="5" /><LimitRow label="Columns / table" value="15" /><LimitRow label="Export formats" value="All 6" isIncluded />
+                  <LimitRow label="Projects" value="3" /><LimitRow label="Tables / project" value="15" /><LimitRow label="AI generations" value="5 / day" /><LimitRow label="Snapshots" value="5" /><LimitRow label="Columns / table" value="15" /><LimitRow label="Export formats" value="All 6" isIncluded />
                 </div>
               </div>
               <div className="relative flex flex-col p-5 border-2 border-zinc-900 dark:border-white rounded-2xl bg-white dark:bg-zinc-950">

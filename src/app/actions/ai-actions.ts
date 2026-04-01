@@ -4,7 +4,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { GoogleGenAI } from "@google/genai";
-import { assertCanUseAI, assertCanAddTables } from "@/lib/plan-enforement";
+import { assertCanUseAI, assertCanAddTables } from "@/lib/plan-enforcement";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
