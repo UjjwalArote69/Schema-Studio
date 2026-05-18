@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Library, Settings } from "lucide-react";
+import { LayoutDashboard, Library, Settings, GraduationCap } from "lucide-react";
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export function SidebarNav() {
   const navLinks = [
     { name: "Schemas", href: "/dashboard", icon: LayoutDashboard },
     { name: "Templates", href: "/templates", icon: Library },
+    { name: "Learn SQL", href: "/learn", icon: GraduationCap },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 

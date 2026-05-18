@@ -30,6 +30,7 @@ export default function LandingPage() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-4 sm:gap-6 text-sm font-semibold text-zinc-600 dark:text-zinc-400">
             <Link href="#features" className="hover:text-black dark:hover:text-white transition-colors">Features</Link>
+            <Link href="/learn" className="hover:text-black dark:hover:text-white transition-colors">Learn SQL</Link>
             <Link href="https://github.com" target="_blank" className="hover:text-black dark:hover:text-white transition-colors">GitHub</Link>
             
             <ThemeToggle /> 

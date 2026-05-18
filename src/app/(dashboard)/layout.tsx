@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Crown,
+  GraduationCap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/logout-button";
@@ -111,6 +112,12 @@ export default async function ProtectedLayout({
               className="flex items-center gap-2.5 px-2 py-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-md transition-colors"
             >
               <BookOpen className="w-4 h-4 opacity-50" /> Documentation
+            </Link>
+            <Link
+              href="/learn"
+              className="flex items-center gap-2.5 px-2 py-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 rounded-md transition-colors"
+            >
+              <GraduationCap className="w-4 h-4 opacity-50" /> Learn SQL
             </Link>
           </div>
 
